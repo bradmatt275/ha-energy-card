@@ -1,95 +1,16 @@
 // src/editor.ts
 // Visual configuration editor for Energy Flow Card
 
-import { LitElement, html, css, TemplateResult } from "lit";
+import { LitElement, html, css, TemplateResult, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { HomeAssistant, fireEvent, LovelaceCardEditor } from "custom-card-helpers";
-import { EnergyFlowCardConfig, CircuitItemConfig } from "./types";
+import { EnergyFlowCardConfig, CircuitItemConfig, SolarArrayConfig } from "./types";
 import { CARD_EDITOR_NAME } from "./const";
 
 @customElement(CARD_EDITOR_NAME)
 export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: EnergyFlowCardConfig;
-
-  public setConfig(config: EnergyFlowCardConfig): void {
-    this._config = config;
-  }
-
-  private _valueChanged(ev: CustomEvent): void {
-    if (!this._config || !this.hass) return;
-
-    const target = ev.target as any;
-    const configPath = target.configValue;
-    
-    if (!configPath) return;
-
-    // Extract value based on event/target type
-    let value: any;
-    
-    // For ha-entity-picker and ha-select, value is in ev.detail.value
-    if (ev.detail && "value" in ev.detail) {
-      value = ev.detail.value;
-    } 
-    // For ha-switch, use checked property
-    else if (target.tagName === "HA-SWITCH") {
-      value = target.checked;
-    }
-    // For text inputs
-    else {
-      value = target.value;
-    }
-
-    // Create new config with the updated value
-    const newConfig = this._cloneConfig(this._config);
-    this._setNestedValue(newConfig, configPath, value);
-
-    fireEvent(this, "config-changed", { config: newConfig });
-  }
-
-  private _cloneConfig(config: EnergyFlowCardConfig): EnergyFlowCardConfig {
-    // Deep clone that handles undefined values properly
-    const clone: any = {};
-    for (const key of Object.keys(config)) {
-      const val = (config as any)[key];
-      if (val !== null && typeof val === "object" && !Array.isArray(val)) {
-        clone[key] = { ...val };
-        // Handle one more level of nesting for arrays
-        for (const subKey of Object.keys(clone[key])) {
-          if (Array.isArray(clone[key][subKey])) {
-            clone[key][subKey] = clone[key][subKey].map((item: any) => 
-              typeof item === "object" ? { ...item } : item
-            );
-          }
-        }
-      } else if (Array.isArray(val)) {
-        clone[key] = val.map((item: any) => 
-          typeof item === "object" ? { ...item } : item
-        );
-      } else {
-        clone[key] = val;
-      }
-    }
-    return clone as EnergyFlowCardConfig;
-  }
-
-  private _setNestedValue(obj: any, path: string, value: any): void {
-    const keys = path.split(".");
-    let current = obj;
-
-    for (let i = 0; i < keys.length - 1; i++) {
-      const key = keys[i];
-      if (!(key in current) || current[key] === null || current[key] === undefined) {
-        current[key] = {};
-      } else if (typeof current[key] === "object" && !Array.isArray(current[key])) {
-        // Clone the nested object to avoid mutation
-        current[key] = { ...current[key] };
-      }
-      current = current[key];
-    }
-
-    current[keys[keys.length - 1]] = value;
-  }
 
   static styles = css`
     :host {
@@ -124,103 +45,56 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
       color: var(--secondary-text-color);
     }
 
-    .field {
+    .form-group {
       margin-bottom: 12px;
     }
 
-    .field:last-child {
+    .form-group:last-child {
       margin-bottom: 0;
     }
 
-    .field-label {
+    .form-group label {
       font-size: 12px;
+      font-weight: 500;
       color: var(--secondary-text-color);
-      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
       display: block;
+      margin-bottom: 4px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 450px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
     }
 
     ha-textfield,
     ha-select,
-    ha-entity-picker {
-      width: 100%;
-    }
-
-    ha-formfield {
+    ha-selector {
       display: block;
-      margin-bottom: 8px;
-    }
-
-    .row {
-      display: flex;
-      gap: 12px;
-    }
-
-    .row > * {
-      flex: 1;
-    }
-
-    .arrays-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 8px;
-    }
-
-    .array-item {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 12px;
-      background: var(--secondary-background-color);
-      border-radius: 8px;
-      position: relative;
-    }
-
-    .array-item ha-textfield,
-    .array-item ha-entity-picker {
       width: 100%;
     }
 
-    .array-item ha-icon-button {
-      position: absolute;
-      top: 4px;
-      right: 4px;
+    ha-switch {
+      --mdc-theme-secondary: var(--primary-color);
     }
 
-    .add-button {
-      margin-top: 8px;
-    }
-
-    .circuits-list {
+    .switch-row {
       display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 8px;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
     }
 
-    .circuit-item {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 12px;
-      background: var(--secondary-background-color);
-      border-radius: 8px;
-      position: relative;
-    }
-
-    .circuit-item ha-textfield,
-    .circuit-item ha-entity-picker {
-      width: 100%;
-    }
-
-    .circuit-item ha-icon-picker {
-      width: 100%;
-    }
-
-    .circuit-item ha-icon-button {
-      position: absolute;
-      top: 4px;
-      right: 4px;
+    .switch-label {
+      font-size: 14px;
     }
 
     .help-text {
@@ -228,619 +102,740 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
       color: var(--secondary-text-color);
       margin-top: 4px;
     }
+
+    .items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .list-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+      background: var(--secondary-background-color);
+      border-radius: 8px;
+      position: relative;
+    }
+
+    .list-item-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    @media (max-width: 450px) {
+      .list-item-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .delete-button {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      --mdc-icon-button-size: 36px;
+      --mdc-icon-size: 20px;
+      color: var(--secondary-text-color);
+    }
+
+    .delete-button:hover {
+      color: var(--error-color, #f44336);
+    }
+
+    mwc-button {
+      --mdc-theme-primary: var(--primary-color);
+      margin-top: 8px;
+    }
   `;
 
+  public setConfig(config: EnergyFlowCardConfig): void {
+    this._config = config;
+  }
+
   protected render(): TemplateResult {
-    if (!this.hass || !this._config) {
+    if (!this._config || !this.hass) {
       return html``;
     }
 
     return html`
       <div class="card-config">
-        <!-- General Settings -->
-        <div class="section">
-          <div class="section-title">
-            <ha-icon icon="mdi:cog"></ha-icon>
-            General
-          </div>
+        ${this._renderGeneralSection()}
+        ${this._renderAnimationSection()}
+        ${this._renderSolarSection()}
+        ${this._renderGridSection()}
+        ${this._renderBatterySection()}
+        ${this._renderHomeSection()}
+        ${this._renderDailyTotalsSection()}
+        ${this._renderCircuitsSection()}
+        ${this._renderUPSSection()}
+        ${this._renderEVChargerSection()}
+      </div>
+    `;
+  }
 
-          <div class="field">
-            <ha-textfield
-              label="Card Title"
-              .value=${this._config.title || ""}
-              .configValue=${"title"}
-              @input=${this._valueChanged}
-            ></ha-textfield>
-          </div>
+  // ============================================================================
+  // Section Renderers
+  // ============================================================================
+
+  private _renderGeneralSection(): TemplateResult {
+    return html`
+      <div class="section">
+        <div class="section-title">
+          <ha-icon icon="mdi:cog"></ha-icon>
+          General
         </div>
-
-        <!-- Animation Settings -->
-        <div class="section">
-          <div class="section-title">
-            <ha-icon icon="mdi:animation"></ha-icon>
-            Animation
-          </div>
-
-          <ha-formfield label="Enable Animation">
-            <ha-switch
-              .checked=${this._config.animation?.enabled ?? true}
-              .configValue=${"animation.enabled"}
-              @change=${this._valueChanged}
-            ></ha-switch>
-          </ha-formfield>
-
-          <div class="field">
-            <ha-select
-              label="Animation Speed"
-              .value=${this._config.animation?.speed || "auto"}
-              .configValue=${"animation.speed"}
-              @selected=${this._valueChanged}
-              @closed=${(ev: Event) => ev.stopPropagation()}
-            >
-              <mwc-list-item value="auto">Auto (based on power)</mwc-list-item>
-              <mwc-list-item value="fast">Fast</mwc-list-item>
-              <mwc-list-item value="medium">Medium</mwc-list-item>
-              <mwc-list-item value="slow">Slow</mwc-list-item>
-            </ha-select>
-          </div>
-        </div>
-
-        <!-- Solar Settings -->
-        <div class="section">
-          <div class="section-title">
-            <ha-icon icon="mdi:solar-power"></ha-icon>
-            Solar
-          </div>
-
-          <ha-formfield label="Show Solar">
-            <ha-switch
-              .checked=${this._config.solar?.show ?? false}
-              .configValue=${"solar.show"}
-              @change=${this._valueChanged}
-            ></ha-switch>
-          </ha-formfield>
-
-          ${this._config.solar?.show
-            ? html`
-                <div class="field">
-                  <ha-entity-picker
-                    .hass=${this.hass}
-                    .value=${this._config.solar?.total_power || ""}
-                    .configValue=${"solar.total_power"}
-                    @value-changed=${this._valueChanged}
-                    .includeDomains=${["sensor"]}
-                    label="Total Power (optional)"
-                    allow-custom-entity
-                  ></ha-entity-picker>
-                  <span class="help-text"
-                    >Leave empty to sum array powers</span
-                  >
-                </div>
-
-                <div class="field">
-                  <ha-entity-picker
-                    .hass=${this.hass}
-                    .value=${this._config.solar?.daily_production || ""}
-                    .configValue=${"solar.daily_production"}
-                    @value-changed=${this._valueChanged}
-                    .includeDomains=${["sensor"]}
-                    label="Daily Production"
-                    allow-custom-entity
-                  ></ha-entity-picker>
-                </div>
-
-                <span class="field-label">PV Arrays</span>
-                <div class="arrays-list">
-                  ${(this._config.solar?.arrays || []).map(
-                    (array, index) => html`
-                      <div class="array-item">
-                        <ha-textfield
-                          label="Name"
-                          .value=${array.name || ""}
-                          @input=${(ev: Event) =>
-                            this._updateArray(index, "name", (ev.target as any).value)}
-                        ></ha-textfield>
-                        <ha-entity-picker
-                          .hass=${this.hass}
-                          .value=${array.power || ""}
-                          @value-changed=${(ev: CustomEvent) =>
-                            this._updateArray(index, "power", ev.detail.value)}
-                          .includeDomains=${["sensor"]}
-                          label="Power Entity"
-                          allow-custom-entity
-                        ></ha-entity-picker>
-                        <ha-icon-button
-                          .path=${"M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"}
-                          @click=${() => this._removeArray(index)}
-                        ></ha-icon-button>
-                      </div>
-                    `
-                  )}
-                </div>
-                <mwc-button class="add-button" @click=${this._addArray}>
-                  <ha-icon icon="mdi:plus"></ha-icon>
-                  Add Array
-                </mwc-button>
-              `
-            : ""}
-        </div>
-
-        <!-- Grid Settings -->
-        <div class="section">
-          <div class="section-title">
-            <ha-icon icon="mdi:transmission-tower"></ha-icon>
-            Grid
-          </div>
-
-          <ha-formfield label="Show Grid">
-            <ha-switch
-              .checked=${this._config.grid?.show ?? true}
-              .configValue=${"grid.show"}
-              @change=${this._valueChanged}
-            ></ha-switch>
-          </ha-formfield>
-
-          ${this._config.grid?.show
-            ? html`
-                <div class="field">
-                  <ha-entity-picker
-                    .hass=${this.hass}
-                    .value=${this._config.grid?.power || ""}
-                    .configValue=${"grid.power"}
-                    @value-changed=${this._valueChanged}
-                    .includeDomains=${["sensor"]}
-                    label="Grid Power"
-                    allow-custom-entity
-                  ></ha-entity-picker>
-                  <span class="help-text"
-                    >Positive = import, Negative = export</span
-                  >
-                </div>
-
-                <div class="row">
-                  <div class="field">
-                    <ha-entity-picker
-                      .hass=${this.hass}
-                      .value=${this._config.grid?.daily_import || ""}
-                      .configValue=${"grid.daily_import"}
-                      @value-changed=${this._valueChanged}
-                      .includeDomains=${["sensor"]}
-                      label="Daily Import"
-                      allow-custom-entity
-                    ></ha-entity-picker>
-                  </div>
-                  <div class="field">
-                    <ha-entity-picker
-                      .hass=${this.hass}
-                      .value=${this._config.grid?.daily_export || ""}
-                      .configValue=${"grid.daily_export"}
-                      @value-changed=${this._valueChanged}
-                      .includeDomains=${["sensor"]}
-                      label="Daily Export"
-                      allow-custom-entity
-                    ></ha-entity-picker>
-                  </div>
-                </div>
-              `
-            : ""}
-        </div>
-
-        <!-- Battery Settings -->
-        <div class="section">
-          <div class="section-title">
-            <ha-icon icon="mdi:battery-high"></ha-icon>
-            Battery
-          </div>
-
-          <ha-formfield label="Show Battery">
-            <ha-switch
-              .checked=${this._config.battery?.show ?? false}
-              .configValue=${"battery.show"}
-              @change=${this._valueChanged}
-            ></ha-switch>
-          </ha-formfield>
-
-          ${this._config.battery?.show
-            ? html`
-                <div class="field">
-                  <ha-entity-picker
-                    .hass=${this.hass}
-                    .value=${this._config.battery?.power || ""}
-                    .configValue=${"battery.power"}
-                    @value-changed=${this._valueChanged}
-                    .includeDomains=${["sensor"]}
-                    label="Battery Power"
-                    allow-custom-entity
-                  ></ha-entity-picker>
-                  <span class="help-text"
-                    >Positive = charging, Negative = discharging</span
-                  >
-                </div>
-
-                <div class="row">
-                  <div class="field">
-                    <ha-entity-picker
-                      .hass=${this.hass}
-                      .value=${this._config.battery?.soc || ""}
-                      .configValue=${"battery.soc"}
-                      @value-changed=${this._valueChanged}
-                      .includeDomains=${["sensor"]}
-                      label="State of Charge"
-                      allow-custom-entity
-                    ></ha-entity-picker>
-                  </div>
-                  <div class="field">
-                    <ha-entity-picker
-                      .hass=${this.hass}
-                      .value=${this._config.battery?.voltage || ""}
-                      .configValue=${"battery.voltage"}
-                      @value-changed=${this._valueChanged}
-                      .includeDomains=${["sensor"]}
-                      label="Voltage"
-                      allow-custom-entity
-                    ></ha-entity-picker>
-                  </div>
-                </div>
-
-                <div class="field">
-                  <ha-entity-picker
-                    .hass=${this.hass}
-                    .value=${this._config.battery?.current || ""}
-                    .configValue=${"battery.current"}
-                    @value-changed=${this._valueChanged}
-                    .includeDomains=${["sensor"]}
-                    label="Current"
-                    allow-custom-entity
-                  ></ha-entity-picker>
-                </div>
-              `
-            : ""}
-        </div>
-
-        <!-- Home Settings -->
-        <div class="section">
-          <div class="section-title">
-            <ha-icon icon="mdi:home"></ha-icon>
-            Home
-          </div>
-
-          <div class="field">
-            <ha-entity-picker
-              .hass=${this.hass}
-              .value=${this._config.home?.power || ""}
-              .configValue=${"home.power"}
-              @value-changed=${this._valueChanged}
-              .includeDomains=${["sensor"]}
-              label="Home Power (optional)"
-              allow-custom-entity
-            ></ha-entity-picker>
-            <span class="help-text"
-              >Leave empty to calculate from Solar - Battery + Grid</span
-            >
-          </div>
-
-          <div class="field">
-            <ha-entity-picker
-              .hass=${this.hass}
-              .value=${this._config.home?.daily_consumption || ""}
-              .configValue=${"home.daily_consumption"}
-              @value-changed=${this._valueChanged}
-              .includeDomains=${["sensor"]}
-              label="Daily Consumption"
-              allow-custom-entity
-            ></ha-entity-picker>
-          </div>
-        </div>
-
-        <!-- Daily Totals Settings -->
-        <div class="section">
-          <div class="section-title">
-            <ha-icon icon="mdi:calendar-today"></ha-icon>
-            Daily Totals
-          </div>
-
-          <ha-formfield label="Show Daily Totals">
-            <ha-switch
-              .checked=${this._config.daily_totals?.show ?? true}
-              .configValue=${"daily_totals.show"}
-              @change=${this._valueChanged}
-            ></ha-switch>
-          </ha-formfield>
-
-          ${this._config.daily_totals?.show
-            ? html`
-                <ha-formfield label="Show Self-Sufficiency">
-                  <ha-switch
-                    .checked=${this._config.daily_totals?.show_self_sufficiency ?? true}
-                    .configValue=${"daily_totals.show_self_sufficiency"}
-                    @change=${this._valueChanged}
-                  ></ha-switch>
-                </ha-formfield>
-              `
-            : ""}
-        </div>
-
-        <!-- Circuits Settings -->
-        <div class="section">
-          <div class="section-title">
-            <ha-icon icon="mdi:flash"></ha-icon>
-            Circuits
-          </div>
-
-          <ha-formfield label="Show Circuits">
-            <ha-switch
-              .checked=${this._config.circuits?.show ?? false}
-              .configValue=${"circuits.show"}
-              @change=${this._valueChanged}
-            ></ha-switch>
-          </ha-formfield>
-
-          ${this._config.circuits?.show
-            ? html`
-                <div class="row">
-                  <div class="field">
-                    <ha-textfield
-                      label="Columns"
-                      type="number"
-                      min="1"
-                      max="10"
-                      .value=${String(this._config.circuits?.columns || 5)}
-                      .configValue=${"circuits.columns"}
-                      @input=${this._valueChanged}
-                    ></ha-textfield>
-                  </div>
-                  <div class="field">
-                    <ha-textfield
-                      label="Highlight Top"
-                      type="number"
-                      min="0"
-                      max="10"
-                      .value=${String(this._config.circuits?.highlight_top || 0)}
-                      .configValue=${"circuits.highlight_top"}
-                      @input=${this._valueChanged}
-                    ></ha-textfield>
-                    <span class="help-text">0 = disabled</span>
-                  </div>
-                </div>
-
-                <span class="field-label">Circuit Items</span>
-                <div class="circuits-list">
-                  ${(this._config.circuits?.items || []).map(
-                    (circuit, index) => html`
-                      <div class="circuit-item">
-                        <ha-textfield
-                          label="Name"
-                          .value=${circuit.name || ""}
-                          @input=${(ev: Event) =>
-                            this._updateCircuit(index, "name", (ev.target as any).value)}
-                        ></ha-textfield>
-                        <ha-icon-picker
-                          .hass=${this.hass}
-                          .value=${circuit.icon || "mdi:flash"}
-                          @value-changed=${(ev: CustomEvent) =>
-                            this._updateCircuit(index, "icon", ev.detail.value)}
-                        ></ha-icon-picker>
-                        <ha-entity-picker
-                          .hass=${this.hass}
-                          .value=${circuit.power || ""}
-                          @value-changed=${(ev: CustomEvent) =>
-                            this._updateCircuit(index, "power", ev.detail.value)}
-                          .includeDomains=${["sensor"]}
-                          label="Power Entity"
-                          allow-custom-entity
-                        ></ha-entity-picker>
-                        <ha-icon-button
-                          .path=${"M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"}
-                          @click=${() => this._removeCircuit(index)}
-                        ></ha-icon-button>
-                      </div>
-                    `
-                  )}
-                </div>
-                <mwc-button class="add-button" @click=${this._addCircuit}>
-                  <ha-icon icon="mdi:plus"></ha-icon>
-                  Add Circuit
-                </mwc-button>
-              `
-            : ""}
-        </div>
-
-        <!-- UPS Settings -->
-        <div class="section">
-          <div class="section-title">
-            <ha-icon icon="mdi:power-plug"></ha-icon>
-            UPS (Optional)
-          </div>
-
-          <ha-formfield label="Show UPS">
-            <ha-switch
-              .checked=${this._config.ups?.show ?? false}
-              .configValue=${"ups.show"}
-              @change=${this._valueChanged}
-            ></ha-switch>
-          </ha-formfield>
-
-          ${this._config.ups?.show
-            ? html`
-                <div class="field">
-                  <ha-entity-picker
-                    .hass=${this.hass}
-                    .value=${this._config.ups?.battery || ""}
-                    .configValue=${"ups.battery"}
-                    @value-changed=${this._valueChanged}
-                    .includeDomains=${["sensor"]}
-                    label="Battery Level"
-                    allow-custom-entity
-                  ></ha-entity-picker>
-                </div>
-
-                <div class="row">
-                  <div class="field">
-                    <ha-entity-picker
-                      .hass=${this.hass}
-                      .value=${this._config.ups?.status || ""}
-                      .configValue=${"ups.status"}
-                      @value-changed=${this._valueChanged}
-                      .includeDomains=${["sensor"]}
-                      label="Status"
-                      allow-custom-entity
-                    ></ha-entity-picker>
-                  </div>
-                  <div class="field">
-                    <ha-entity-picker
-                      .hass=${this.hass}
-                      .value=${this._config.ups?.load || ""}
-                      .configValue=${"ups.load"}
-                      @value-changed=${this._valueChanged}
-                      .includeDomains=${["sensor"]}
-                      label="Load"
-                      allow-custom-entity
-                    ></ha-entity-picker>
-                  </div>
-                </div>
-              `
-            : ""}
-        </div>
-
-        <!-- EV Charger Settings -->
-        <div class="section">
-          <div class="section-title">
-            <ha-icon icon="mdi:ev-station"></ha-icon>
-            EV Charger (Optional)
-          </div>
-
-          <ha-formfield label="Show EV Charger">
-            <ha-switch
-              .checked=${this._config.ev_charger?.show ?? false}
-              .configValue=${"ev_charger.show"}
-              @change=${this._valueChanged}
-            ></ha-switch>
-          </ha-formfield>
-
-          ${this._config.ev_charger?.show
-            ? html`
-                <div class="row">
-                  <div class="field">
-                    <ha-entity-picker
-                      .hass=${this.hass}
-                      .value=${this._config.ev_charger?.mode || ""}
-                      .configValue=${"ev_charger.mode"}
-                      @value-changed=${this._valueChanged}
-                      .includeDomains=${["sensor"]}
-                      label="Mode"
-                      allow-custom-entity
-                    ></ha-entity-picker>
-                  </div>
-                  <div class="field">
-                    <ha-entity-picker
-                      .hass=${this.hass}
-                      .value=${this._config.ev_charger?.status || ""}
-                      .configValue=${"ev_charger.status"}
-                      @value-changed=${this._valueChanged}
-                      .includeDomains=${["sensor"]}
-                      label="Status"
-                      allow-custom-entity
-                    ></ha-entity-picker>
-                  </div>
-                </div>
-
-                <div class="row">
-                  <div class="field">
-                    <ha-entity-picker
-                      .hass=${this.hass}
-                      .value=${this._config.ev_charger?.plug_status || ""}
-                      .configValue=${"ev_charger.plug_status"}
-                      @value-changed=${this._valueChanged}
-                      .includeDomains=${["sensor"]}
-                      label="Plug Status"
-                      allow-custom-entity
-                    ></ha-entity-picker>
-                  </div>
-                  <div class="field">
-                    <ha-entity-picker
-                      .hass=${this.hass}
-                      .value=${this._config.ev_charger?.power || ""}
-                      .configValue=${"ev_charger.power"}
-                      @value-changed=${this._valueChanged}
-                      .includeDomains=${["sensor"]}
-                      label="Power"
-                      allow-custom-entity
-                    ></ha-entity-picker>
-                  </div>
-                </div>
-              `
-            : ""}
+        <div class="form-group">
+          <label>Card Title</label>
+          <ha-textfield
+            .value=${this._config.title || ""}
+            .placeholder=${"Energy Flow"}
+            @input=${(e: Event) => this._updateConfig("title", (e.target as HTMLInputElement).value)}
+          ></ha-textfield>
         </div>
       </div>
     `;
+  }
+
+  private _renderAnimationSection(): TemplateResult {
+    return html`
+      <div class="section">
+        <div class="section-title">
+          <ha-icon icon="mdi:animation"></ha-icon>
+          Animation
+        </div>
+        <div class="switch-row">
+          <span class="switch-label">Enable Animation</span>
+          <ha-switch
+            .checked=${this._config.animation?.enabled ?? true}
+            @change=${(e: Event) => this._updateAnimation("enabled", (e.target as HTMLInputElement).checked)}
+          ></ha-switch>
+        </div>
+        <div class="form-group">
+          <label>Animation Speed</label>
+          <ha-selector
+            .hass=${this.hass}
+            .selector=${{
+              select: {
+                options: [
+                  { value: "auto", label: "Auto (based on power)" },
+                  { value: "fast", label: "Fast" },
+                  { value: "medium", label: "Medium" },
+                  { value: "slow", label: "Slow" },
+                ],
+                mode: "dropdown",
+              },
+            }}
+            .value=${this._config.animation?.speed || "auto"}
+            @value-changed=${(e: CustomEvent) => this._updateAnimation("speed", e.detail.value)}
+          ></ha-selector>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderSolarSection(): TemplateResult {
+    const show = this._config.solar?.show ?? false;
+    return html`
+      <div class="section">
+        <div class="section-title">
+          <ha-icon icon="mdi:solar-power"></ha-icon>
+          Solar
+        </div>
+        <div class="switch-row">
+          <span class="switch-label">Show Solar</span>
+          <ha-switch
+            .checked=${show}
+            @change=${(e: Event) => this._updateSolar("show", (e.target as HTMLInputElement).checked)}
+          ></ha-switch>
+        </div>
+        ${show ? html`
+          <div class="form-group">
+            <label>Total Power (optional)</label>
+            <ha-selector
+              .hass=${this.hass}
+              .selector=${{ entity: { domain: ["sensor"] } }}
+              .value=${this._config.solar?.total_power || ""}
+              @value-changed=${(e: CustomEvent) => this._updateSolar("total_power", e.detail.value || "")}
+            ></ha-selector>
+            <span class="help-text">Leave empty to sum array powers</span>
+          </div>
+          <div class="form-group">
+            <label>Daily Production</label>
+            <ha-selector
+              .hass=${this.hass}
+              .selector=${{ entity: { domain: ["sensor"] } }}
+              .value=${this._config.solar?.daily_production || ""}
+              @value-changed=${(e: CustomEvent) => this._updateSolar("daily_production", e.detail.value || "")}
+            ></ha-selector>
+          </div>
+          <div class="form-group">
+            <label>PV Arrays</label>
+            <div class="items-list">
+              ${(this._config.solar?.arrays || []).map((array, index) => this._renderArrayItem(array, index))}
+            </div>
+            <mwc-button @click=${this._addArray}>
+              <ha-icon icon="mdi:plus"></ha-icon>
+              Add Array
+            </mwc-button>
+          </div>
+        ` : nothing}
+      </div>
+    `;
+  }
+
+  private _renderArrayItem(array: SolarArrayConfig, index: number): TemplateResult {
+    return html`
+      <div class="list-item">
+        <mwc-icon-button
+          class="delete-button"
+          @click=${() => this._removeArray(index)}
+          title="Remove array"
+        >
+          <ha-icon icon="mdi:delete"></ha-icon>
+        </mwc-icon-button>
+        <div class="form-group">
+          <label>Name</label>
+          <ha-textfield
+            .value=${array.name || ""}
+            @input=${(e: Event) => this._updateArray(index, "name", (e.target as HTMLInputElement).value)}
+          ></ha-textfield>
+        </div>
+        <div class="form-group">
+          <label>Power Entity</label>
+          <ha-selector
+            .hass=${this.hass}
+            .selector=${{ entity: { domain: ["sensor"] } }}
+            .value=${array.power || ""}
+            @value-changed=${(e: CustomEvent) => this._updateArray(index, "power", e.detail.value || "")}
+          ></ha-selector>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderGridSection(): TemplateResult {
+    const show = this._config.grid?.show ?? true;
+    return html`
+      <div class="section">
+        <div class="section-title">
+          <ha-icon icon="mdi:transmission-tower"></ha-icon>
+          Grid
+        </div>
+        <div class="switch-row">
+          <span class="switch-label">Show Grid</span>
+          <ha-switch
+            .checked=${show}
+            @change=${(e: Event) => this._updateGrid("show", (e.target as HTMLInputElement).checked)}
+          ></ha-switch>
+        </div>
+        ${show ? html`
+          <div class="form-group">
+            <label>Grid Power</label>
+            <ha-selector
+              .hass=${this.hass}
+              .selector=${{ entity: { domain: ["sensor"] } }}
+              .value=${this._config.grid?.power || ""}
+              @value-changed=${(e: CustomEvent) => this._updateGrid("power", e.detail.value || "")}
+            ></ha-selector>
+            <span class="help-text">Positive = import, Negative = export</span>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Daily Import</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.grid?.daily_import || ""}
+                @value-changed=${(e: CustomEvent) => this._updateGrid("daily_import", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+            <div class="form-group">
+              <label>Daily Export</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.grid?.daily_export || ""}
+                @value-changed=${(e: CustomEvent) => this._updateGrid("daily_export", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+          </div>
+        ` : nothing}
+      </div>
+    `;
+  }
+
+  private _renderBatterySection(): TemplateResult {
+    const show = this._config.battery?.show ?? false;
+    return html`
+      <div class="section">
+        <div class="section-title">
+          <ha-icon icon="mdi:battery-high"></ha-icon>
+          Battery
+        </div>
+        <div class="switch-row">
+          <span class="switch-label">Show Battery</span>
+          <ha-switch
+            .checked=${show}
+            @change=${(e: Event) => this._updateBattery("show", (e.target as HTMLInputElement).checked)}
+          ></ha-switch>
+        </div>
+        ${show ? html`
+          <div class="form-group">
+            <label>Battery Power</label>
+            <ha-selector
+              .hass=${this.hass}
+              .selector=${{ entity: { domain: ["sensor"] } }}
+              .value=${this._config.battery?.power || ""}
+              @value-changed=${(e: CustomEvent) => this._updateBattery("power", e.detail.value || "")}
+            ></ha-selector>
+            <span class="help-text">Positive = charging, Negative = discharging</span>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>State of Charge</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.battery?.soc || ""}
+                @value-changed=${(e: CustomEvent) => this._updateBattery("soc", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+            <div class="form-group">
+              <label>Voltage</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.battery?.voltage || ""}
+                @value-changed=${(e: CustomEvent) => this._updateBattery("voltage", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Current</label>
+            <ha-selector
+              .hass=${this.hass}
+              .selector=${{ entity: { domain: ["sensor"] } }}
+              .value=${this._config.battery?.current || ""}
+              @value-changed=${(e: CustomEvent) => this._updateBattery("current", e.detail.value || "")}
+            ></ha-selector>
+          </div>
+        ` : nothing}
+      </div>
+    `;
+  }
+
+  private _renderHomeSection(): TemplateResult {
+    return html`
+      <div class="section">
+        <div class="section-title">
+          <ha-icon icon="mdi:home"></ha-icon>
+          Home
+        </div>
+        <div class="form-group">
+          <label>Home Power (optional)</label>
+          <ha-selector
+            .hass=${this.hass}
+            .selector=${{ entity: { domain: ["sensor"] } }}
+            .value=${this._config.home?.power || ""}
+            @value-changed=${(e: CustomEvent) => this._updateHome("power", e.detail.value || "")}
+          ></ha-selector>
+          <span class="help-text">Leave empty to calculate from Solar - Battery + Grid</span>
+        </div>
+        <div class="form-group">
+          <label>Daily Consumption</label>
+          <ha-selector
+            .hass=${this.hass}
+            .selector=${{ entity: { domain: ["sensor"] } }}
+            .value=${this._config.home?.daily_consumption || ""}
+            @value-changed=${(e: CustomEvent) => this._updateHome("daily_consumption", e.detail.value || "")}
+          ></ha-selector>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderDailyTotalsSection(): TemplateResult {
+    const show = this._config.daily_totals?.show ?? true;
+    return html`
+      <div class="section">
+        <div class="section-title">
+          <ha-icon icon="mdi:calendar-today"></ha-icon>
+          Daily Totals
+        </div>
+        <div class="switch-row">
+          <span class="switch-label">Show Daily Totals</span>
+          <ha-switch
+            .checked=${show}
+            @change=${(e: Event) => this._updateDailyTotals("show", (e.target as HTMLInputElement).checked)}
+          ></ha-switch>
+        </div>
+        ${show ? html`
+          <div class="switch-row">
+            <span class="switch-label">Show Self-Sufficiency</span>
+            <ha-switch
+              .checked=${this._config.daily_totals?.show_self_sufficiency ?? true}
+              @change=${(e: Event) => this._updateDailyTotals("show_self_sufficiency", (e.target as HTMLInputElement).checked)}
+            ></ha-switch>
+          </div>
+        ` : nothing}
+      </div>
+    `;
+  }
+
+  private _renderCircuitsSection(): TemplateResult {
+    const show = this._config.circuits?.show ?? false;
+    return html`
+      <div class="section">
+        <div class="section-title">
+          <ha-icon icon="mdi:flash"></ha-icon>
+          Circuits
+        </div>
+        <div class="switch-row">
+          <span class="switch-label">Show Circuits</span>
+          <ha-switch
+            .checked=${show}
+            @change=${(e: Event) => this._updateCircuits("show", (e.target as HTMLInputElement).checked)}
+          ></ha-switch>
+        </div>
+        ${show ? html`
+          <div class="form-row">
+            <div class="form-group">
+              <label>Columns</label>
+              <ha-textfield
+                type="number"
+                min="1"
+                max="10"
+                .value=${String(this._config.circuits?.columns || 5)}
+                @input=${(e: Event) => this._updateCircuits("columns", parseInt((e.target as HTMLInputElement).value) || 5)}
+              ></ha-textfield>
+            </div>
+            <div class="form-group">
+              <label>Highlight Top N</label>
+              <ha-textfield
+                type="number"
+                min="0"
+                max="10"
+                .value=${String(this._config.circuits?.highlight_top || 0)}
+                @input=${(e: Event) => this._updateCircuits("highlight_top", parseInt((e.target as HTMLInputElement).value) || 0)}
+              ></ha-textfield>
+              <span class="help-text">0 = disabled</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Circuit Items</label>
+            <div class="items-list">
+              ${(this._config.circuits?.items || []).map((circuit, index) => this._renderCircuitItem(circuit, index))}
+            </div>
+            <mwc-button @click=${this._addCircuit}>
+              <ha-icon icon="mdi:plus"></ha-icon>
+              Add Circuit
+            </mwc-button>
+          </div>
+        ` : nothing}
+      </div>
+    `;
+  }
+
+  private _renderCircuitItem(circuit: CircuitItemConfig, index: number): TemplateResult {
+    return html`
+      <div class="list-item">
+        <mwc-icon-button
+          class="delete-button"
+          @click=${() => this._removeCircuit(index)}
+          title="Remove circuit"
+        >
+          <ha-icon icon="mdi:delete"></ha-icon>
+        </mwc-icon-button>
+        <div class="list-item-row">
+          <div class="form-group">
+            <label>Name</label>
+            <ha-textfield
+              .value=${circuit.name || ""}
+              @input=${(e: Event) => this._updateCircuit(index, "name", (e.target as HTMLInputElement).value)}
+            ></ha-textfield>
+          </div>
+          <div class="form-group">
+            <label>Icon</label>
+            <ha-selector
+              .hass=${this.hass}
+              .selector=${{ icon: {} }}
+              .value=${circuit.icon || "mdi:flash"}
+              @value-changed=${(e: CustomEvent) => this._updateCircuit(index, "icon", e.detail.value || "mdi:flash")}
+            ></ha-selector>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Power Entity</label>
+          <ha-selector
+            .hass=${this.hass}
+            .selector=${{ entity: { domain: ["sensor"] } }}
+            .value=${circuit.power || ""}
+            @value-changed=${(e: CustomEvent) => this._updateCircuit(index, "power", e.detail.value || "")}
+          ></ha-selector>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderUPSSection(): TemplateResult {
+    const show = this._config.ups?.show ?? false;
+    return html`
+      <div class="section">
+        <div class="section-title">
+          <ha-icon icon="mdi:power-plug"></ha-icon>
+          UPS (Optional)
+        </div>
+        <div class="switch-row">
+          <span class="switch-label">Show UPS</span>
+          <ha-switch
+            .checked=${show}
+            @change=${(e: Event) => this._updateUPS("show", (e.target as HTMLInputElement).checked)}
+          ></ha-switch>
+        </div>
+        ${show ? html`
+          <div class="form-group">
+            <label>Battery Level</label>
+            <ha-selector
+              .hass=${this.hass}
+              .selector=${{ entity: { domain: ["sensor"] } }}
+              .value=${this._config.ups?.battery || ""}
+              @value-changed=${(e: CustomEvent) => this._updateUPS("battery", e.detail.value || "")}
+            ></ha-selector>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Status</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.ups?.status || ""}
+                @value-changed=${(e: CustomEvent) => this._updateUPS("status", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+            <div class="form-group">
+              <label>Load</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.ups?.load || ""}
+                @value-changed=${(e: CustomEvent) => this._updateUPS("load", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+          </div>
+        ` : nothing}
+      </div>
+    `;
+  }
+
+  private _renderEVChargerSection(): TemplateResult {
+    const show = this._config.ev_charger?.show ?? false;
+    return html`
+      <div class="section">
+        <div class="section-title">
+          <ha-icon icon="mdi:ev-station"></ha-icon>
+          EV Charger (Optional)
+        </div>
+        <div class="switch-row">
+          <span class="switch-label">Show EV Charger</span>
+          <ha-switch
+            .checked=${show}
+            @change=${(e: Event) => this._updateEVCharger("show", (e.target as HTMLInputElement).checked)}
+          ></ha-switch>
+        </div>
+        ${show ? html`
+          <div class="form-row">
+            <div class="form-group">
+              <label>Mode</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.ev_charger?.mode || ""}
+                @value-changed=${(e: CustomEvent) => this._updateEVCharger("mode", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+            <div class="form-group">
+              <label>Status</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.ev_charger?.status || ""}
+                @value-changed=${(e: CustomEvent) => this._updateEVCharger("status", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Plug Status</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.ev_charger?.plug_status || ""}
+                @value-changed=${(e: CustomEvent) => this._updateEVCharger("plug_status", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+            <div class="form-group">
+              <label>Power</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.ev_charger?.power || ""}
+                @value-changed=${(e: CustomEvent) => this._updateEVCharger("power", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+          </div>
+        ` : nothing}
+      </div>
+    `;
+  }
+
+  // ============================================================================
+  // Config Update Methods
+  // ============================================================================
+
+  private _updateConfig(key: string, value: unknown): void {
+    this._config = { ...this._config, [key]: value };
+    this._fireConfigChanged();
+  }
+
+  private _updateAnimation(key: string, value: unknown): void {
+    this._config = {
+      ...this._config,
+      animation: { ...this._config.animation, [key]: value },
+    };
+    this._fireConfigChanged();
+  }
+
+  private _updateSolar(key: string, value: unknown): void {
+    this._config = {
+      ...this._config,
+      solar: { ...this._config.solar, [key]: value },
+    };
+    this._fireConfigChanged();
+  }
+
+  private _updateGrid(key: string, value: unknown): void {
+    this._config = {
+      ...this._config,
+      grid: { ...this._config.grid, [key]: value },
+    };
+    this._fireConfigChanged();
+  }
+
+  private _updateBattery(key: string, value: unknown): void {
+    this._config = {
+      ...this._config,
+      battery: { ...this._config.battery, [key]: value },
+    };
+    this._fireConfigChanged();
+  }
+
+  private _updateHome(key: string, value: unknown): void {
+    this._config = {
+      ...this._config,
+      home: { ...this._config.home, [key]: value },
+    };
+    this._fireConfigChanged();
+  }
+
+  private _updateDailyTotals(key: string, value: unknown): void {
+    this._config = {
+      ...this._config,
+      daily_totals: { ...this._config.daily_totals, [key]: value },
+    };
+    this._fireConfigChanged();
+  }
+
+  private _updateCircuits(key: string, value: unknown): void {
+    this._config = {
+      ...this._config,
+      circuits: { ...this._config.circuits, [key]: value },
+    };
+    this._fireConfigChanged();
+  }
+
+  private _updateUPS(key: string, value: unknown): void {
+    this._config = {
+      ...this._config,
+      ups: { ...this._config.ups, [key]: value },
+    };
+    this._fireConfigChanged();
+  }
+
+  private _updateEVCharger(key: string, value: unknown): void {
+    this._config = {
+      ...this._config,
+      ev_charger: { ...this._config.ev_charger, [key]: value },
+    };
+    this._fireConfigChanged();
   }
 
   // Array management
   private _addArray(): void {
     const arrays = [...(this._config.solar?.arrays || [])];
     arrays.push({ name: `PV${arrays.length + 1}`, power: "" });
-
-    const newConfig = {
+    this._config = {
       ...this._config,
       solar: { ...this._config.solar, arrays },
     };
-    fireEvent(this, "config-changed", { config: newConfig });
+    this._fireConfigChanged();
   }
 
   private _removeArray(index: number): void {
     const arrays = [...(this._config.solar?.arrays || [])];
     arrays.splice(index, 1);
-
-    const newConfig = {
+    this._config = {
       ...this._config,
       solar: { ...this._config.solar, arrays },
     };
-    fireEvent(this, "config-changed", { config: newConfig });
+    this._fireConfigChanged();
   }
 
   private _updateArray(index: number, field: string, value: string): void {
     const arrays = [...(this._config.solar?.arrays || [])];
     arrays[index] = { ...arrays[index], [field]: value };
-
-    const newConfig = {
+    this._config = {
       ...this._config,
       solar: { ...this._config.solar, arrays },
     };
-    fireEvent(this, "config-changed", { config: newConfig });
+    this._fireConfigChanged();
   }
 
   // Circuit management
   private _addCircuit(): void {
     const items: CircuitItemConfig[] = [...(this._config.circuits?.items || [])];
     items.push({ name: "", icon: "mdi:flash", power: "" });
-
-    const newConfig = {
+    this._config = {
       ...this._config,
       circuits: { ...this._config.circuits, items },
     };
-    fireEvent(this, "config-changed", { config: newConfig });
+    this._fireConfigChanged();
   }
 
   private _removeCircuit(index: number): void {
     const items = [...(this._config.circuits?.items || [])];
     items.splice(index, 1);
-
-    const newConfig = {
+    this._config = {
       ...this._config,
       circuits: { ...this._config.circuits, items },
     };
-    fireEvent(this, "config-changed", { config: newConfig });
+    this._fireConfigChanged();
   }
 
   private _updateCircuit(index: number, field: string, value: string): void {
     const items = [...(this._config.circuits?.items || [])];
     items[index] = { ...items[index], [field]: value };
-
-    const newConfig = {
+    this._config = {
       ...this._config,
       circuits: { ...this._config.circuits, items },
     };
-    fireEvent(this, "config-changed", { config: newConfig });
+    this._fireConfigChanged();
+  }
+
+  private _fireConfigChanged(): void {
+    fireEvent(this, "config-changed", { config: this._config });
   }
 }
 

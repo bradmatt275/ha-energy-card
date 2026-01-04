@@ -23,13 +23,13 @@ export interface EnergyFlowCardConfig extends LovelaceCardConfig {
 }
 
 export interface AnimationConfig {
-  enabled: boolean;
-  speed: "auto" | "fast" | "medium" | "slow";
-  dots: boolean;
+  enabled?: boolean;
+  speed?: "auto" | "fast" | "medium" | "slow";
+  dots?: boolean;
 }
 
 export interface SolarConfig {
-  show: boolean;
+  show?: boolean;
   arrays?: SolarArrayConfig[];
   total_power?: string;
   daily_production?: string;
@@ -41,7 +41,7 @@ export interface SolarArrayConfig {
 }
 
 export interface GridConfig {
-  show: boolean;
+  show?: boolean;
   power?: string;
   import_power?: string;
   export_power?: string;
@@ -51,7 +51,7 @@ export interface GridConfig {
 }
 
 export interface BatteryConfig {
-  show: boolean;
+  show?: boolean;
   power?: string;
   soc?: string;
   voltage?: string;
@@ -65,7 +65,7 @@ export interface HomeConfig {
 }
 
 export interface CircuitsConfig {
-  show: boolean;
+  show?: boolean;
   columns?: number;
   highlight_top?: number;
   items?: CircuitItemConfig[];
@@ -78,19 +78,19 @@ export interface CircuitItemConfig {
 }
 
 export interface DailyTotalsConfig {
-  show: boolean;
+  show?: boolean;
   show_self_sufficiency?: boolean;
 }
 
 export interface UPSConfig {
-  show: boolean;
+  show?: boolean;
   battery?: string;
   status?: string;
   load?: string;
 }
 
 export interface EVChargerConfig {
-  show: boolean;
+  show?: boolean;
   mode?: string;
   status?: string;
   plug_status?: string;
