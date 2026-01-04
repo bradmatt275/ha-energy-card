@@ -21,14 +21,31 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
 
     const target = ev.target as any;
     const configPath = target.configValue;
-    const value = ev.detail?.value ?? target.value ?? target.checked;
+    
+    // Handle different event types for entity picker vs other inputs
+    let value: any;
+    if (ev.detail !== undefined && ev.detail !== null) {
+      // Entity picker fires value-changed with detail.value
+      value = ev.detail.value !== undefined ? ev.detail.value : ev.detail;
+    } else if (target.checked !== undefined) {
+      // Checkbox/switch
+      value = target.checked;
+    } else {
+      // Text input
+      value = target.value;
+    }
 
     if (!configPath) return;
 
-    const newConfig = { ...this._config };
+    // Deep clone the config to ensure reactivity
+    const newConfig = this._deepClone(this._config);
     this._setNestedValue(newConfig, configPath, value);
 
     fireEvent(this, "config-changed", { config: newConfig });
+  }
+
+  private _deepClone<T>(obj: T): T {
+    return JSON.parse(JSON.stringify(obj));
   }
 
   private _setNestedValue(obj: any, path: string, value: any): void {
@@ -37,7 +54,7 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
 
     for (let i = 0; i < keys.length - 1; i++) {
       const key = keys[i];
-      if (!(key in current)) {
+      if (!(key in current) || current[key] === null || current[key] === undefined) {
         current[key] = {};
       }
       current = current[key];
