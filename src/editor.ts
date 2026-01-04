@@ -167,6 +167,7 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
         ${this._renderSolarSection()}
         ${this._renderGridSection()}
         ${this._renderBatterySection()}
+        ${this._renderInverterSection()}
         ${this._renderHomeSection()}
         ${this._renderDailyTotalsSection()}
         ${this._renderCircuitsSection()}
@@ -580,6 +581,86 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
     `;
   }
 
+  private _renderInverterSection(): TemplateResult {
+    const show = this._config.inverter?.show ?? false;
+    return html`
+      <div class="section">
+        <div class="section-title">
+          <ha-icon icon="mdi:power-plug-outline"></ha-icon>
+          Inverter (Optional)
+        </div>
+        <div class="switch-row">
+          <span class="switch-label">Show Inverter</span>
+          <ha-switch
+            .checked=${show}
+            @change=${(e: Event) => this._updateInverter("show", (e.target as HTMLInputElement).checked)}
+          ></ha-switch>
+        </div>
+        ${show ? html`
+          <div class="form-group">
+            <label>Working Mode</label>
+            <ha-selector
+              .hass=${this.hass}
+              .selector=${{ entity: { domain: ["select", "input_select", "sensor"] } }}
+              .value=${this._config.inverter?.mode || ""}
+              @value-changed=${(e: CustomEvent) => this._updateInverter("mode", e.detail.value || "")}
+            ></ha-selector>
+            <div class="help-text">Select or input_select entity to allow mode changes from card</div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Inverter Temperature</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.inverter?.temperature || ""}
+                @value-changed=${(e: CustomEvent) => this._updateInverter("temperature", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+            <div class="form-group">
+              <label>DC Temperature</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.inverter?.dc_temperature || ""}
+                @value-changed=${(e: CustomEvent) => this._updateInverter("dc_temperature", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Output Power</label>
+            <ha-selector
+              .hass=${this.hass}
+              .selector=${{ entity: { domain: ["sensor"] } }}
+              .value=${this._config.inverter?.output_power || ""}
+              @value-changed=${(e: CustomEvent) => this._updateInverter("output_power", e.detail.value || "")}
+            ></ha-selector>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Output Voltage</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.inverter?.output_voltage || ""}
+                @value-changed=${(e: CustomEvent) => this._updateInverter("output_voltage", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+            <div class="form-group">
+              <label>Output Current</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.inverter?.output_current || ""}
+                @value-changed=${(e: CustomEvent) => this._updateInverter("output_current", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+          </div>
+        ` : nothing}
+      </div>
+    `;
+  }
+
   private _renderUPSSection(): TemplateResult {
     const show = this._config.ups?.show ?? false;
     return html`
@@ -768,6 +849,14 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
     this._config = {
       ...this._config,
       ev_charger: { ...this._config.ev_charger, [key]: value },
+    };
+    this._fireConfigChanged();
+  }
+
+  private _updateInverter(key: string, value: unknown): void {
+    this._config = {
+      ...this._config,
+      inverter: { ...this._config.inverter, [key]: value },
     };
     this._fireConfigChanged();
   }
