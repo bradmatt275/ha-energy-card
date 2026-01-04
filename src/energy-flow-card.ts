@@ -410,6 +410,8 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
                   ${this._config.ev_charger?.show
                     ? html`
                         <energy-ev-status
+                          .hass=${this.hass}
+                          .modeEntity=${this._config.ev_charger?.mode || null}
                           .mode=${this._state.evCharger?.mode}
                           .status=${this._state.evCharger?.status}
                           .plugStatus=${this._state.evCharger?.plugStatus}

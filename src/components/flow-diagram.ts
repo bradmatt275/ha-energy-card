@@ -46,7 +46,7 @@ export class EnergyFlowDiagram extends LitElement {
       grid-template-areas:
         ". solar ."
         "grid-area home-area battery-area";
-      grid-template-columns: minmax(100px, 1fr) minmax(100px, auto) minmax(100px, 1fr);
+      grid-template-columns: 1fr auto 1fr;
       grid-template-rows: auto auto;
       gap: 8px 0;
       align-items: center;
@@ -59,7 +59,7 @@ export class EnergyFlowDiagram extends LitElement {
     }
 
     .flow-grid.no-battery {
-      grid-template-columns: minmax(100px, 1fr) minmax(100px, auto) minmax(100px, 1fr);
+      grid-template-columns: 1fr auto 1fr;
       grid-template-areas:
         ". solar ."
         "grid-area home-area .";
@@ -67,7 +67,7 @@ export class EnergyFlowDiagram extends LitElement {
 
     .flow-grid.no-solar.no-battery {
       grid-template-areas: "grid-area home-area .";
-      grid-template-columns: minmax(100px, 1fr) minmax(100px, auto) minmax(100px, 1fr);
+      grid-template-columns: 1fr auto 1fr;
       grid-template-rows: auto;
     }
 

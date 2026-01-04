@@ -2,15 +2,20 @@
 // EV charger status card component
 
 import { LitElement, html, css } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { formatPower } from "../utils/power";
+import type { HomeAssistant } from "custom-card-helpers";
 
 @customElement("energy-ev-status")
 export class EnergyEVStatus extends LitElement {
+  @property({ attribute: false }) hass?: HomeAssistant;
+  @property({ type: String }) modeEntity: string | null = null;
   @property({ type: String }) mode: string | null = null;
   @property({ type: String }) status: string | null = null;
   @property({ type: String }) plugStatus: string | null = null;
   @property({ type: Number }) power: number | null = null;
+  
+  @state() private _showModeSelector = false;
 
   static styles = css`
     :host {
@@ -104,6 +109,71 @@ export class EnergyEVStatus extends LitElement {
       font-family: "SF Mono", "Monaco", "Inconsolata", "Roboto Mono", monospace;
       color: #10b981;
     }
+
+    /* Mode selector styles */
+    .mode-selector-wrapper {
+      position: relative;
+    }
+
+    .ev-mode.clickable {
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: background 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .ev-mode.clickable:hover {
+      background: var(--divider-color, rgba(255, 255, 255, 0.1));
+    }
+
+    .ev-mode.clickable ha-icon {
+      --mdc-icon-size: 14px;
+      color: var(--secondary-text-color);
+    }
+
+    .mode-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      z-index: 100;
+      min-width: 120px;
+      background: var(--card-background-color, var(--ha-card-background));
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.2));
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .mode-option {
+      padding: 10px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      text-transform: capitalize;
+      color: var(--primary-text-color);
+      transition: background 0.15s ease;
+    }
+
+    .mode-option:hover {
+      background: var(--divider-color, rgba(255, 255, 255, 0.1));
+    }
+
+    .mode-option.active {
+      background: var(--primary-color, #03a9f4);
+      color: var(--text-primary-color, white);
+    }
+
+    .mode-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 99;
+    }
   `;
 
   protected render() {
@@ -142,13 +212,46 @@ export class EnergyEVStatus extends LitElement {
       statusClass += " charging";
     }
 
+    // Get mode options from entity if available
+    const modeOptions = this._getModeOptions();
+    const canSelectMode = modeOptions.length > 0 && this.hass && this.modeEntity;
+
     return html`
       <div class="ev-card">
         <ha-icon class="${iconClass}" icon="mdi:ev-station"></ha-icon>
         <span class="ev-label">EV Charger</span>
         <div class="ev-info">
           ${this.mode
-            ? html` <span class="ev-stat ev-mode">${this.mode}</span> `
+            ? canSelectMode
+              ? html`
+                  <div class="mode-selector-wrapper">
+                    <span 
+                      class="ev-stat ev-mode clickable" 
+                      @click=${this._toggleModeSelector}
+                    >
+                      ${this.mode}
+                      <ha-icon icon="mdi:chevron-down"></ha-icon>
+                    </span>
+                    ${this._showModeSelector
+                      ? html`
+                          <div class="mode-backdrop" @click=${this._closeModeSelector}></div>
+                          <div class="mode-dropdown">
+                            ${modeOptions.map(
+                              (option) => html`
+                                <div
+                                  class="mode-option ${option === this.mode ? 'active' : ''}"
+                                  @click=${() => this._selectMode(option)}
+                                >
+                                  ${option}
+                                </div>
+                              `
+                            )}
+                          </div>
+                        `
+                      : ""}
+                  </div>
+                `
+              : html`<span class="ev-stat ev-mode">${this.mode}</span>`
             : ""}
           <span class="ev-stat ${statusClass}">
             ${this.status || "Unknown"}
@@ -166,6 +269,55 @@ export class EnergyEVStatus extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  private _getModeOptions(): string[] {
+    if (!this.hass || !this.modeEntity) return [];
+    
+    const stateObj = this.hass.states[this.modeEntity];
+    if (!stateObj) return [];
+
+    // For select/input_select entities, options are in attributes
+    const options = stateObj.attributes?.options;
+    if (Array.isArray(options)) {
+      return options;
+    }
+
+    return [];
+  }
+
+  private _toggleModeSelector(e: Event): void {
+    e.stopPropagation();
+    this._showModeSelector = !this._showModeSelector;
+  }
+
+  private _closeModeSelector(): void {
+    this._showModeSelector = false;
+  }
+
+  private async _selectMode(option: string): Promise<void> {
+    if (!this.hass || !this.modeEntity) return;
+
+    this._showModeSelector = false;
+
+    // Determine the domain to call the right service
+    const domain = this.modeEntity.split(".")[0];
+    
+    try {
+      if (domain === "select") {
+        await this.hass.callService("select", "select_option", {
+          entity_id: this.modeEntity,
+          option: option,
+        });
+      } else if (domain === "input_select") {
+        await this.hass.callService("input_select", "select_option", {
+          entity_id: this.modeEntity,
+          option: option,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to set EV charger mode:", err);
+    }
   }
 }
 

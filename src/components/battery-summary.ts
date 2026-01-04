@@ -85,7 +85,7 @@ export class EnergyBatterySummary extends LitElement {
     .stats-container {
       display: flex;
       gap: 8px;
-      flex: 1;
+      flex: 0;
     }
 
     .stat {
