@@ -19,6 +19,7 @@ export interface EnergyFlowCardConfig extends LovelaceCardConfig {
   daily_totals?: DailyTotalsConfig;
   ups?: UPSConfig;
   ev_charger?: EVChargerConfig;
+  inverter?: InverterConfig;
   display?: DisplayConfig;
 }
 
@@ -97,6 +98,16 @@ export interface EVChargerConfig {
   power?: string;
 }
 
+export interface InverterConfig {
+  show?: boolean;
+  mode?: string;
+  temperature?: string;
+  dc_temperature?: string;
+  output_power?: string;
+  output_voltage?: string;
+  output_current?: string;
+}
+
 export interface DisplayConfig {
   compact_mode?: boolean;
   show_units?: boolean;
@@ -118,6 +129,7 @@ export interface EnergyState {
   selfSufficiency: number | null;
   ups?: UPSState;
   evCharger?: EVChargerState;
+  inverter?: InverterState;
 }
 
 export interface SolarState {
@@ -181,6 +193,15 @@ export interface EVChargerState {
   status: string | null;
   plugStatus: string | null;
   power: number | null;
+}
+
+export interface InverterState {
+  mode: string | null;
+  temperature: number | null;
+  dcTemperature: number | null;
+  outputPower: number | null;
+  outputVoltage: number | null;
+  outputCurrent: number | null;
 }
 
 // ============================================================================
