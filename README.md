@@ -6,7 +6,7 @@
 
 A custom Home Assistant Lovelace card that displays real-time energy flow through your solar/battery system with animated flow visualization.
 
-![Energy Flow Card Preview](docs/examples/design-example1.png)
+![Energy Flow Card Preview](docs/examples/screenshots/energy-card.png)
 
 ## Features
 

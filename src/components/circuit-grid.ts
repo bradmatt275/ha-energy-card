@@ -33,6 +33,19 @@ export class EnergyCircuitGrid extends LitElement {
       gap: 8px;
     }
 
+    /* Responsive grid - use CSS to override inline columns on smaller screens */
+    @media (max-width: 600px) {
+      .circuit-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .circuit-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
     .circuit-chip {
       display: flex;
       align-items: center;

@@ -27,11 +27,14 @@ export class EnergyUPSStatus extends LitElement {
       background: var(--card-background-color, var(--ha-card-background));
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       border-radius: 12px;
+      flex-wrap: wrap;
+      min-width: 0;
     }
 
     .ups-icon {
       --mdc-icon-size: 24px;
       color: var(--secondary-text-color);
+      flex-shrink: 0;
     }
 
     .ups-icon.online {
@@ -61,6 +64,8 @@ export class EnergyUPSStatus extends LitElement {
       gap: 8px;
       font-size: 14px;
       color: var(--primary-text-color);
+      flex-wrap: wrap;
+      min-width: 0;
     }
 
     .ups-stat {
@@ -70,6 +75,7 @@ export class EnergyUPSStatus extends LitElement {
       padding: 2px 4px;
       border-radius: 4px;
       transition: background 0.2s ease;
+      white-space: nowrap;
     }
 
     .ups-stat.clickable {

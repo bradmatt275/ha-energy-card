@@ -1,0 +1,90 @@
+type: custom:energy-flow-card
+title: ""
+animation:
+  enabled: true
+  speed: auto
+  dots: true
+solar:
+  show: true
+  arrays:
+    - name: PV1
+      power: sensor.deye_inverter_pv1_power
+    - name: PV2
+      power: sensor.deye_inverter_pv2_power
+  daily_production: sensor.deye_inverter_today_production
+  total_power: sensor.deye_inverter_total_production
+grid:
+  show: true
+  power: sensor.deye_inverter_external_ct1_power
+  daily_import: sensor.power_grid_daily_import
+  daily_export: sensor.power_grid_daily_export
+battery:
+  show: true
+  power: sensor.pack_battery_power
+  soc: sensor.pack_battery_soc
+  voltage: sensor.pack_battery_voltage
+  current: sensor.pack_battery_current
+daily_totals:
+  show: true
+  show_self_sufficiency: false
+circuits:
+  show: true
+  items:
+    - name: Oven
+      icon: mdi:stove
+      power: sensor.oven_power
+    - name: House AC
+      icon: mdi:air-conditioner
+      power: sensor.house_ac_power
+    - name: Power Point 1
+      icon: mdi:power-socket-au
+      power: sensor.p1_power
+    - name: Power Point 2
+      icon: mdi:power-socket-au
+      power: sensor.p2_power
+    - name: Power Point 3
+      icon: mdi:power-socket-au
+      power: sensor.p3_power
+    - name: EV Charger
+      icon: mdi:ev-plug-type2
+      power: sensor.ev_charger_power
+    - name: Garage AC
+      icon: mdi:air-conditioner
+      power: sensor.ac2_power
+    - name: Lights 1
+      icon: mdi:ceiling-light
+      power: sensor.lights_1_power
+    - name: Lights 2
+      icon: mdi:ceiling-light
+      power: sensor.lights_2_power
+    - name: Back Yard
+      icon: mdi:wall-sconce-flat
+      power: sensor.back_yard_power
+    - name: Freezer
+      icon: mdi:fridge
+      power: sensor.freezer_power
+    - name: PC
+      icon: mdi:desktop-classic
+      power: sensor.master_bedroom_power
+    - name: Fridge
+      icon: mdi:fridge
+      power: sensor.fridge_power
+    - name: Network
+      icon: mdi:server-network
+      power: sensor.network_power
+  highlight_top: 2
+grid_options:
+  columns: full
+home:
+  power: sensor.deye_inverter_load_l1_power
+ev_charger:
+  show: true
+  plug_status: sensor.myenergi_car_charger_plug_status
+  power: sensor.myenergi_car_charger_internal_load_ct1
+  status: sensor.myenergi_car_charger_status
+  mode: select.myenergi_car_charger_charge_mode
+ups:
+  show: true
+  battery: sensor.cyberpower_ups_battery_charge_2
+  status: sensor.cyberpower_ups_status_2
+  load: sensor.cyberpower_ups_load_2

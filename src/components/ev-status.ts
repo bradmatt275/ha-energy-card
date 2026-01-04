@@ -30,11 +30,14 @@ export class EnergyEVStatus extends LitElement {
       background: var(--card-background-color, var(--ha-card-background));
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       border-radius: 12px;
+      flex-wrap: wrap;
+      min-width: 0;
     }
 
     .ev-icon {
       --mdc-icon-size: 24px;
       color: var(--secondary-text-color);
+      flex-shrink: 0;
     }
 
     .ev-icon.charging {
@@ -64,12 +67,15 @@ export class EnergyEVStatus extends LitElement {
       gap: 8px;
       font-size: 14px;
       color: var(--primary-text-color);
+      flex-wrap: wrap;
+      min-width: 0;
     }
 
     .ev-stat {
       display: flex;
       align-items: center;
       gap: 4px;
+      white-space: nowrap;
     }
 
     .ev-stat::before {
