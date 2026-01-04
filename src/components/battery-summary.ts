@@ -231,12 +231,18 @@ export class EnergyBatterySummary extends LitElement {
               >${formatPower(Math.abs(this.power ?? 0))}</span
             >
             <span class="stat-label"
-              >${this.charging ? "Charging" : "Discharging"}</span
+              >${this._getPowerLabel()}</span
             >
           </div>
         </div>
       </div>
     `;
+  }
+
+  private _getPowerLabel(): string {
+    const power = this.power ?? 0;
+    if (power === 0) return "Idle";
+    return this.charging ? "Charging" : "Discharging";
   }
 
   private _handleClick(entityId: string | null): void {
