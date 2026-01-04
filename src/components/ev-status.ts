@@ -136,7 +136,7 @@ export class EnergyEVStatus extends LitElement {
 
     .mode-dropdown {
       position: absolute;
-      top: 100%;
+      bottom: 100%;
       left: 0;
       z-index: 100;
       min-width: 120px;
@@ -145,7 +145,7 @@ export class EnergyEVStatus extends LitElement {
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       overflow: hidden;
-      margin-top: 4px;
+      margin-bottom: 4px;
     }
 
     .mode-option {

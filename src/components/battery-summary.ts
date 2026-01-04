@@ -40,8 +40,8 @@ export class EnergyBatterySummary extends LitElement {
     }
 
     .soc-container {
-      flex: 2;
-      min-width: 150px;
+      flex: 1;
+      min-width: 100px;
     }
 
     .soc-bar {

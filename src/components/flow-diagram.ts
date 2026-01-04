@@ -38,6 +38,8 @@ export class EnergyFlowDiagram extends LitElement {
       position: relative;
       width: 100%;
       padding: 16px;
+      box-sizing: border-box;
+      overflow: hidden;
     }
 
     /* Grid layout for hub-and-spoke design */
@@ -46,7 +48,7 @@ export class EnergyFlowDiagram extends LitElement {
       grid-template-areas:
         ". solar ."
         "grid-area home-area battery-area";
-      grid-template-columns: 1fr auto 1fr;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
       grid-template-rows: auto auto;
       gap: 8px 0;
       align-items: center;
@@ -59,7 +61,7 @@ export class EnergyFlowDiagram extends LitElement {
     }
 
     .flow-grid.no-battery {
-      grid-template-columns: 1fr auto 1fr;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
       grid-template-areas:
         ". solar ."
         "grid-area home-area .";
@@ -67,7 +69,7 @@ export class EnergyFlowDiagram extends LitElement {
 
     .flow-grid.no-solar.no-battery {
       grid-template-areas: "grid-area home-area .";
-      grid-template-columns: 1fr auto 1fr;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
       grid-template-rows: auto;
     }
 
