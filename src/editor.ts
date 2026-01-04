@@ -22,30 +22,55 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
     const target = ev.target as any;
     const configPath = target.configValue;
     
-    // Handle different event types for entity picker vs other inputs
+    if (!configPath) return;
+
+    // Extract value based on event/target type
     let value: any;
-    if (ev.detail !== undefined && ev.detail !== null) {
-      // Entity picker fires value-changed with detail.value
-      value = ev.detail.value !== undefined ? ev.detail.value : ev.detail;
-    } else if (target.checked !== undefined) {
-      // Checkbox/switch
+    
+    // For ha-entity-picker and ha-select, value is in ev.detail.value
+    if (ev.detail && "value" in ev.detail) {
+      value = ev.detail.value;
+    } 
+    // For ha-switch, use checked property
+    else if (target.tagName === "HA-SWITCH") {
       value = target.checked;
-    } else {
-      // Text input
+    }
+    // For text inputs
+    else {
       value = target.value;
     }
 
-    if (!configPath) return;
-
-    // Deep clone the config to ensure reactivity
-    const newConfig = this._deepClone(this._config);
+    // Create new config with the updated value
+    const newConfig = this._cloneConfig(this._config);
     this._setNestedValue(newConfig, configPath, value);
 
     fireEvent(this, "config-changed", { config: newConfig });
   }
 
-  private _deepClone<T>(obj: T): T {
-    return JSON.parse(JSON.stringify(obj));
+  private _cloneConfig(config: EnergyFlowCardConfig): EnergyFlowCardConfig {
+    // Deep clone that handles undefined values properly
+    const clone: any = {};
+    for (const key of Object.keys(config)) {
+      const val = (config as any)[key];
+      if (val !== null && typeof val === "object" && !Array.isArray(val)) {
+        clone[key] = { ...val };
+        // Handle one more level of nesting for arrays
+        for (const subKey of Object.keys(clone[key])) {
+          if (Array.isArray(clone[key][subKey])) {
+            clone[key][subKey] = clone[key][subKey].map((item: any) => 
+              typeof item === "object" ? { ...item } : item
+            );
+          }
+        }
+      } else if (Array.isArray(val)) {
+        clone[key] = val.map((item: any) => 
+          typeof item === "object" ? { ...item } : item
+        );
+      } else {
+        clone[key] = val;
+      }
+    }
+    return clone as EnergyFlowCardConfig;
   }
 
   private _setNestedValue(obj: any, path: string, value: any): void {
@@ -56,6 +81,9 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
       const key = keys[i];
       if (!(key in current) || current[key] === null || current[key] === undefined) {
         current[key] = {};
+      } else if (typeof current[key] === "object" && !Array.isArray(current[key])) {
+        // Clone the nested object to avoid mutation
+        current[key] = { ...current[key] };
       }
       current = current[key];
     }
@@ -140,23 +168,23 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
 
     .array-item {
       display: flex;
+      flex-direction: column;
       gap: 8px;
-      align-items: center;
-      padding: 8px;
+      padding: 12px;
       background: var(--secondary-background-color);
       border-radius: 8px;
+      position: relative;
     }
 
-    .array-item ha-textfield {
-      flex: 0 0 100px;
-    }
-
+    .array-item ha-textfield,
     .array-item ha-entity-picker {
-      flex: 1;
+      width: 100%;
     }
 
     .array-item ha-icon-button {
-      flex: 0 0 auto;
+      position: absolute;
+      top: 4px;
+      right: 4px;
     }
 
     .add-button {
@@ -172,23 +200,27 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
 
     .circuit-item {
       display: flex;
+      flex-direction: column;
       gap: 8px;
-      align-items: center;
-      padding: 8px;
+      padding: 12px;
       background: var(--secondary-background-color);
       border-radius: 8px;
+      position: relative;
     }
 
-    .circuit-item ha-textfield {
-      flex: 0 0 100px;
+    .circuit-item ha-textfield,
+    .circuit-item ha-entity-picker {
+      width: 100%;
     }
 
     .circuit-item ha-icon-picker {
-      flex: 0 0 60px;
+      width: 100%;
     }
 
-    .circuit-item ha-entity-picker {
-      flex: 1;
+    .circuit-item ha-icon-button {
+      position: absolute;
+      top: 4px;
+      right: 4px;
     }
 
     .help-text {
@@ -271,13 +303,13 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
           ${this._config.solar?.show
             ? html`
                 <div class="field">
-                  <span class="field-label">Total Power (optional)</span>
                   <ha-entity-picker
                     .hass=${this.hass}
                     .value=${this._config.solar?.total_power || ""}
                     .configValue=${"solar.total_power"}
                     @value-changed=${this._valueChanged}
                     .includeDomains=${["sensor"]}
+                    label="Total Power (optional)"
                     allow-custom-entity
                   ></ha-entity-picker>
                   <span class="help-text"
@@ -286,13 +318,13 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
                 </div>
 
                 <div class="field">
-                  <span class="field-label">Daily Production</span>
                   <ha-entity-picker
                     .hass=${this.hass}
                     .value=${this._config.solar?.daily_production || ""}
                     .configValue=${"solar.daily_production"}
                     @value-changed=${this._valueChanged}
                     .includeDomains=${["sensor"]}
+                    label="Daily Production"
                     allow-custom-entity
                   ></ha-entity-picker>
                 </div>
@@ -314,6 +346,7 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
                           @value-changed=${(ev: CustomEvent) =>
                             this._updateArray(index, "power", ev.detail.value)}
                           .includeDomains=${["sensor"]}
+                          label="Power Entity"
                           allow-custom-entity
                         ></ha-entity-picker>
                         <ha-icon-button
@@ -350,13 +383,13 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
           ${this._config.grid?.show
             ? html`
                 <div class="field">
-                  <span class="field-label">Grid Power</span>
                   <ha-entity-picker
                     .hass=${this.hass}
                     .value=${this._config.grid?.power || ""}
                     .configValue=${"grid.power"}
                     @value-changed=${this._valueChanged}
                     .includeDomains=${["sensor"]}
+                    label="Grid Power"
                     allow-custom-entity
                   ></ha-entity-picker>
                   <span class="help-text"
@@ -366,24 +399,24 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
 
                 <div class="row">
                   <div class="field">
-                    <span class="field-label">Daily Import</span>
                     <ha-entity-picker
                       .hass=${this.hass}
                       .value=${this._config.grid?.daily_import || ""}
                       .configValue=${"grid.daily_import"}
                       @value-changed=${this._valueChanged}
                       .includeDomains=${["sensor"]}
+                      label="Daily Import"
                       allow-custom-entity
                     ></ha-entity-picker>
                   </div>
                   <div class="field">
-                    <span class="field-label">Daily Export</span>
                     <ha-entity-picker
                       .hass=${this.hass}
                       .value=${this._config.grid?.daily_export || ""}
                       .configValue=${"grid.daily_export"}
                       @value-changed=${this._valueChanged}
                       .includeDomains=${["sensor"]}
+                      label="Daily Export"
                       allow-custom-entity
                     ></ha-entity-picker>
                   </div>
@@ -410,13 +443,13 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
           ${this._config.battery?.show
             ? html`
                 <div class="field">
-                  <span class="field-label">Battery Power</span>
                   <ha-entity-picker
                     .hass=${this.hass}
                     .value=${this._config.battery?.power || ""}
                     .configValue=${"battery.power"}
                     @value-changed=${this._valueChanged}
                     .includeDomains=${["sensor"]}
+                    label="Battery Power"
                     allow-custom-entity
                   ></ha-entity-picker>
                   <span class="help-text"
@@ -426,37 +459,37 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
 
                 <div class="row">
                   <div class="field">
-                    <span class="field-label">State of Charge</span>
                     <ha-entity-picker
                       .hass=${this.hass}
                       .value=${this._config.battery?.soc || ""}
                       .configValue=${"battery.soc"}
                       @value-changed=${this._valueChanged}
                       .includeDomains=${["sensor"]}
+                      label="State of Charge"
                       allow-custom-entity
                     ></ha-entity-picker>
                   </div>
                   <div class="field">
-                    <span class="field-label">Voltage</span>
                     <ha-entity-picker
                       .hass=${this.hass}
                       .value=${this._config.battery?.voltage || ""}
                       .configValue=${"battery.voltage"}
                       @value-changed=${this._valueChanged}
                       .includeDomains=${["sensor"]}
+                      label="Voltage"
                       allow-custom-entity
                     ></ha-entity-picker>
                   </div>
                 </div>
 
                 <div class="field">
-                  <span class="field-label">Current</span>
                   <ha-entity-picker
                     .hass=${this.hass}
                     .value=${this._config.battery?.current || ""}
                     .configValue=${"battery.current"}
                     @value-changed=${this._valueChanged}
                     .includeDomains=${["sensor"]}
+                    label="Current"
                     allow-custom-entity
                   ></ha-entity-picker>
                 </div>
@@ -472,13 +505,13 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
           </div>
 
           <div class="field">
-            <span class="field-label">Home Power (optional)</span>
             <ha-entity-picker
               .hass=${this.hass}
               .value=${this._config.home?.power || ""}
               .configValue=${"home.power"}
               @value-changed=${this._valueChanged}
               .includeDomains=${["sensor"]}
+              label="Home Power (optional)"
               allow-custom-entity
             ></ha-entity-picker>
             <span class="help-text"
@@ -487,13 +520,13 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
           </div>
 
           <div class="field">
-            <span class="field-label">Daily Consumption</span>
             <ha-entity-picker
               .hass=${this.hass}
               .value=${this._config.home?.daily_consumption || ""}
               .configValue=${"home.daily_consumption"}
               @value-changed=${this._valueChanged}
               .includeDomains=${["sensor"]}
+              label="Daily Consumption"
               allow-custom-entity
             ></ha-entity-picker>
           </div>
@@ -593,6 +626,7 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
                           @value-changed=${(ev: CustomEvent) =>
                             this._updateCircuit(index, "power", ev.detail.value)}
                           .includeDomains=${["sensor"]}
+                          label="Power Entity"
                           allow-custom-entity
                         ></ha-entity-picker>
                         <ha-icon-button
@@ -629,37 +663,37 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
           ${this._config.ups?.show
             ? html`
                 <div class="field">
-                  <span class="field-label">Battery Level</span>
                   <ha-entity-picker
                     .hass=${this.hass}
                     .value=${this._config.ups?.battery || ""}
                     .configValue=${"ups.battery"}
                     @value-changed=${this._valueChanged}
                     .includeDomains=${["sensor"]}
+                    label="Battery Level"
                     allow-custom-entity
                   ></ha-entity-picker>
                 </div>
 
                 <div class="row">
                   <div class="field">
-                    <span class="field-label">Status</span>
                     <ha-entity-picker
                       .hass=${this.hass}
                       .value=${this._config.ups?.status || ""}
                       .configValue=${"ups.status"}
                       @value-changed=${this._valueChanged}
                       .includeDomains=${["sensor"]}
+                      label="Status"
                       allow-custom-entity
                     ></ha-entity-picker>
                   </div>
                   <div class="field">
-                    <span class="field-label">Load</span>
                     <ha-entity-picker
                       .hass=${this.hass}
                       .value=${this._config.ups?.load || ""}
                       .configValue=${"ups.load"}
                       @value-changed=${this._valueChanged}
                       .includeDomains=${["sensor"]}
+                      label="Load"
                       allow-custom-entity
                     ></ha-entity-picker>
                   </div>
@@ -687,24 +721,24 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
             ? html`
                 <div class="row">
                   <div class="field">
-                    <span class="field-label">Mode</span>
                     <ha-entity-picker
                       .hass=${this.hass}
                       .value=${this._config.ev_charger?.mode || ""}
                       .configValue=${"ev_charger.mode"}
                       @value-changed=${this._valueChanged}
                       .includeDomains=${["sensor"]}
+                      label="Mode"
                       allow-custom-entity
                     ></ha-entity-picker>
                   </div>
                   <div class="field">
-                    <span class="field-label">Status</span>
                     <ha-entity-picker
                       .hass=${this.hass}
                       .value=${this._config.ev_charger?.status || ""}
                       .configValue=${"ev_charger.status"}
                       @value-changed=${this._valueChanged}
                       .includeDomains=${["sensor"]}
+                      label="Status"
                       allow-custom-entity
                     ></ha-entity-picker>
                   </div>
@@ -712,24 +746,24 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
 
                 <div class="row">
                   <div class="field">
-                    <span class="field-label">Plug Status</span>
                     <ha-entity-picker
                       .hass=${this.hass}
                       .value=${this._config.ev_charger?.plug_status || ""}
                       .configValue=${"ev_charger.plug_status"}
                       @value-changed=${this._valueChanged}
                       .includeDomains=${["sensor"]}
+                      label="Plug Status"
                       allow-custom-entity
                     ></ha-entity-picker>
                   </div>
                   <div class="field">
-                    <span class="field-label">Power</span>
                     <ha-entity-picker
                       .hass=${this.hass}
                       .value=${this._config.ev_charger?.power || ""}
                       .configValue=${"ev_charger.power"}
                       @value-changed=${this._valueChanged}
                       .includeDomains=${["sensor"]}
+                      label="Power"
                       allow-custom-entity
                     ></ha-entity-picker>
                   </div>
