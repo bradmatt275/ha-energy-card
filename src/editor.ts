@@ -656,6 +656,35 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
               ></ha-selector>
             </div>
           </div>
+          <div class="form-group">
+            <label>Battery SOC (Inverter Reported)</label>
+            <ha-selector
+              .hass=${this.hass}
+              .selector=${{ entity: { domain: ["sensor"] } }}
+              .value=${this._config.inverter?.battery_soc || ""}
+              @value-changed=${(e: CustomEvent) => this._updateInverter("battery_soc", e.detail.value || "")}
+            ></ha-selector>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Battery Voltage (Inverter)</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.inverter?.battery_voltage || ""}
+                @value-changed=${(e: CustomEvent) => this._updateInverter("battery_voltage", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+            <div class="form-group">
+              <label>Battery Current (Inverter)</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.inverter?.battery_current || ""}
+                @value-changed=${(e: CustomEvent) => this._updateInverter("battery_current", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+          </div>
         ` : nothing}
       </div>
     `;

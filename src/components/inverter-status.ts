@@ -21,6 +21,12 @@ export class EnergyInverterStatus extends LitElement {
   @property({ type: String }) outputPowerEntity: string | null = null;
   @property({ type: String }) outputVoltageEntity: string | null = null;
   @property({ type: String }) outputCurrentEntity: string | null = null;
+  @property({ type: Number }) batterySoc: number | null = null;
+  @property({ type: Number }) batteryVoltage: number | null = null;
+  @property({ type: Number }) batteryCurrent: number | null = null;
+  @property({ type: String }) batterySocEntity: string | null = null;
+  @property({ type: String }) batteryVoltageEntity: string | null = null;
+  @property({ type: String }) batteryCurrentEntity: string | null = null;
 
   @state() private _showModeSelector = false;
 
@@ -202,6 +208,10 @@ export class EnergyInverterStatus extends LitElement {
       color: #10b981;
     }
 
+    .stat.soc .stat-value {
+      color: #a855f7;
+    }
+
     @media (max-width: 600px) {
       .inverter-card {
         flex-direction: column;
@@ -322,6 +332,39 @@ export class EnergyInverterStatus extends LitElement {
                   </div>
                 `
               : ""}
+            ${this.batterySoc !== null
+              ? html`
+                  <div 
+                    class="stat soc ${this.batterySocEntity ? 'clickable' : ''}"
+                    @click=${() => this._handleClick(this.batterySocEntity)}
+                  >
+                    <span class="stat-value">${this._formatPercent(this.batterySoc)}</span>
+                    <span class="stat-label">Batt SOC</span>
+                  </div>
+                `
+              : ""}
+            ${this.batteryVoltage !== null
+              ? html`
+                  <div 
+                    class="stat voltage ${this.batteryVoltageEntity ? 'clickable' : ''}"
+                    @click=${() => this._handleClick(this.batteryVoltageEntity)}
+                  >
+                    <span class="stat-value">${this._formatVoltage(this.batteryVoltage)}</span>
+                    <span class="stat-label">Batt V</span>
+                  </div>
+                `
+              : ""}
+            ${this.batteryCurrent !== null
+              ? html`
+                  <div 
+                    class="stat current ${this.batteryCurrentEntity ? 'clickable' : ''}"
+                    @click=${() => this._handleClick(this.batteryCurrentEntity)}
+                  >
+                    <span class="stat-value">${this._formatCurrent(this.batteryCurrent)}</span>
+                    <span class="stat-label">Batt A</span>
+                  </div>
+                `
+              : ""}
           </div>
         </div>
       </div>
@@ -394,6 +437,11 @@ export class EnergyInverterStatus extends LitElement {
   private _formatCurrent(value: number | null): string {
     if (value === null || value === undefined) return "—";
     return `${value.toFixed(1)} A`;
+  }
+
+  private _formatPercent(value: number | null): string {
+    if (value === null || value === undefined) return "—";
+    return `${value.toFixed(1)}%`;
   }
 }
 
