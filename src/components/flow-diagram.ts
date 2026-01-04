@@ -163,7 +163,7 @@ export class EnergyFlowDiagram extends LitElement {
     /* Vertical flow line (solar to home) */
     .solar-flow-line {
       width: 3px;
-      height: 40px;
+      height: 60px;
       position: relative;
     }
 
@@ -202,7 +202,7 @@ export class EnergyFlowDiagram extends LitElement {
 
     /* Horizontal flow line */
     .horizontal-flow {
-      width: 50px;
+      width: 80px;
       height: 3px;
       position: relative;
     }
