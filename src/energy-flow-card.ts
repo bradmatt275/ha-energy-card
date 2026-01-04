@@ -254,6 +254,7 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
             batterySoc: this._getNumericState(this._config.inverter.battery_soc),
             batteryVoltage: this._getNumericState(this._config.inverter.battery_voltage),
             batteryCurrent: this._getNumericState(this._config.inverter.battery_current),
+            gridStatus: this._getStringState(this._config.inverter.grid_status),
           }
         : undefined,
     };
@@ -435,6 +436,8 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
                   .batterySocEntity=${this._config.inverter?.battery_soc || null}
                   .batteryVoltageEntity=${this._config.inverter?.battery_voltage || null}
                   .batteryCurrentEntity=${this._config.inverter?.battery_current || null}
+                  .gridStatus=${this._state.inverter?.gridStatus}
+                  .gridStatusEntity=${this._config.inverter?.grid_status || null}
                 ></energy-inverter-status>
               `
             : ""}

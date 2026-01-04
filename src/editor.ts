@@ -607,6 +607,16 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
             ></ha-selector>
             <div class="help-text">Select or input_select entity to allow mode changes from card</div>
           </div>
+          <div class="form-group">
+            <label>Grid Connection Status</label>
+            <ha-selector
+              .hass=${this.hass}
+              .selector=${{ entity: { domain: ["binary_sensor", "sensor", "switch"] } }}
+              .value=${this._config.inverter?.grid_status || ""}
+              @value-changed=${(e: CustomEvent) => this._updateInverter("grid_status", e.detail.value || "")}
+            ></ha-selector>
+            <div class="help-text">Shows if inverter is connected to grid or running off-grid</div>
+          </div>
           <div class="form-row">
             <div class="form-group">
               <label>Inverter Temperature</label>

@@ -109,6 +109,7 @@ export interface InverterConfig {
   battery_soc?: string;
   battery_voltage?: string;
   battery_current?: string;
+  grid_status?: string;
 }
 
 export interface DisplayConfig {
@@ -208,6 +209,7 @@ export interface InverterState {
   batterySoc: number | null;
   batteryVoltage: number | null;
   batteryCurrent: number | null;
+  gridStatus: string | null;
 }
 
 // ============================================================================

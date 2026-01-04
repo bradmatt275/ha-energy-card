@@ -27,6 +27,8 @@ export class EnergyInverterStatus extends LitElement {
   @property({ type: String }) batterySocEntity: string | null = null;
   @property({ type: String }) batteryVoltageEntity: string | null = null;
   @property({ type: String }) batteryCurrentEntity: string | null = null;
+  @property({ type: String }) gridStatus: string | null = null;
+  @property({ type: String }) gridStatusEntity: string | null = null;
 
   @state() private _showModeSelector = false;
 
@@ -110,6 +112,38 @@ export class EnergyInverterStatus extends LitElement {
     .inverter-mode.clickable ha-icon {
       --mdc-icon-size: 14px;
       color: var(--secondary-text-color);
+    }
+
+    .grid-status {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      transition: background 0.2s ease;
+    }
+
+    .grid-status ha-icon {
+      --mdc-icon-size: 14px;
+    }
+
+    .grid-status.connected {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+    }
+
+    .grid-status.disconnected {
+      background: rgba(249, 115, 22, 0.2);
+      color: #f97316;
+    }
+
+    .grid-status.clickable {
+      cursor: pointer;
+    }
+
+    .grid-status.clickable:hover {
+      filter: brightness(1.2);
     }
 
     .mode-dropdown {
@@ -242,6 +276,17 @@ export class EnergyInverterStatus extends LitElement {
         <div class="inverter-info">
           <div class="inverter-header">
             <span class="inverter-label">Inverter</span>
+            ${this.gridStatus !== null
+              ? html`
+                  <span 
+                    class="grid-status ${this._isGridConnected() ? 'connected' : 'disconnected'} ${this.gridStatusEntity ? 'clickable' : ''}"
+                    @click=${() => this._handleClick(this.gridStatusEntity)}
+                  >
+                    <ha-icon icon="mdi:transmission-tower"></ha-icon>
+                    ${this._isGridConnected() ? 'Grid' : 'Off-Grid'}
+                  </span>
+                `
+              : ""}
             ${this.mode
               ? canSelectMode
                 ? html`
@@ -442,6 +487,12 @@ export class EnergyInverterStatus extends LitElement {
   private _formatPercent(value: number | null): string {
     if (value === null || value === undefined) return "—";
     return `${value.toFixed(1)}%`;
+  }
+
+  private _isGridConnected(): boolean {
+    if (!this.gridStatus) return false;
+    const status = this.gridStatus.toLowerCase();
+    return status === 'on' || status === 'connected' || status === 'true' || status === '1';
   }
 }
 
