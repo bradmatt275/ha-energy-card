@@ -45,29 +45,29 @@ export class EnergyFlowDiagram extends LitElement {
       display: grid;
       grid-template-areas:
         ". solar ."
-        "grid home battery";
-      grid-template-columns: 1fr 1fr 1fr;
+        "grid-area home-area battery-area";
+      grid-template-columns: minmax(100px, 1fr) minmax(100px, auto) minmax(100px, 1fr);
       grid-template-rows: auto auto;
-      gap: 16px;
+      gap: 8px 0;
       align-items: center;
       justify-items: center;
     }
 
     .flow-grid.no-solar {
-      grid-template-areas: "grid home battery";
+      grid-template-areas: "grid-area home-area battery-area";
       grid-template-rows: auto;
     }
 
     .flow-grid.no-battery {
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: minmax(100px, 1fr) minmax(100px, auto) minmax(100px, 1fr);
       grid-template-areas:
         ". solar ."
-        "grid home .";
+        "grid-area home-area .";
     }
 
     .flow-grid.no-solar.no-battery {
-      grid-template-areas: "grid home .";
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-areas: "grid-area home-area .";
+      grid-template-columns: minmax(100px, 1fr) minmax(100px, auto) minmax(100px, 1fr);
       grid-template-rows: auto;
     }
 
@@ -80,21 +80,23 @@ export class EnergyFlowDiagram extends LitElement {
     }
 
     .grid-area {
-      grid-area: grid;
+      grid-area: grid-area;
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: flex-end;
+      width: 100%;
     }
 
     .home-area {
-      grid-area: home;
+      grid-area: home-area;
     }
 
     .battery-area {
-      grid-area: battery;
+      grid-area: battery-area;
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: flex-start;
+      width: 100%;
     }
 
     /* Flow lines between nodes */
@@ -163,7 +165,7 @@ export class EnergyFlowDiagram extends LitElement {
     /* Vertical flow line (solar to home) */
     .solar-flow-line {
       width: 3px;
-      height: 60px;
+      height: 80px;
       position: relative;
     }
 
@@ -200,9 +202,10 @@ export class EnergyFlowDiagram extends LitElement {
       }
     }
 
-    /* Horizontal flow line */
+    /* Horizontal flow line - dynamic width */
     .horizontal-flow {
-      width: 80px;
+      flex: 1;
+      min-width: 20px;
       height: 3px;
       position: relative;
     }

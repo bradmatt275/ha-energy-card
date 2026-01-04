@@ -370,17 +370,6 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
               `
             : ""}
 
-          <!-- Circuits -->
-          ${this._config.circuits?.show && this._state.circuits.length > 0
-            ? html`
-                <energy-circuit-grid
-                  .circuits=${this._state.circuits}
-                  .columns=${this._config.circuits.columns ?? 5}
-                  .highlightTop=${this._config.circuits.highlight_top ?? 0}
-                ></energy-circuit-grid>
-              `
-            : ""}
-
           <!-- Battery Summary -->
           ${this._config.battery?.show
             ? html`
@@ -391,6 +380,17 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
                   .current=${this._state.battery?.current}
                   .charging=${this._state.battery?.charging ?? false}
                 ></energy-battery-summary>
+              `
+            : ""}
+
+          <!-- Circuits -->
+          ${this._config.circuits?.show && this._state.circuits.length > 0
+            ? html`
+                <energy-circuit-grid
+                  .circuits=${this._state.circuits}
+                  .columns=${this._config.circuits.columns ?? 5}
+                  .highlightTop=${this._config.circuits.highlight_top ?? 0}
+                ></energy-circuit-grid>
               `
             : ""}
 
