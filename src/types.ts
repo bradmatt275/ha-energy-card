@@ -158,6 +158,7 @@ export interface CircuitData {
   name: string;
   icon: string;
   power: number;
+  entity?: string;
 }
 
 export interface FlowState {

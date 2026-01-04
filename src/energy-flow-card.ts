@@ -178,6 +178,7 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
           name: circuit.name,
           icon: circuit.icon ?? "mdi:flash",
           power: this._getNumericState(circuit.power) ?? 0,
+          entity: circuit.power,
         });
       }
     }
@@ -354,6 +355,10 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
             .animation=${this._config.animation}
             .showSolar=${this._config.solar?.show ?? false}
             .showBattery=${this._config.battery?.show ?? false}
+            .solarEntity=${this._config.solar?.total_power || this._config.solar?.arrays?.[0]?.power || null}
+            .gridEntity=${this._config.grid?.power || null}
+            .batteryEntity=${this._config.battery?.soc || this._config.battery?.power || null}
+            .homeEntity=${this._config.home?.power || null}
           ></energy-flow-diagram>
 
           <!-- Daily Totals -->
@@ -366,6 +371,10 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
                   .gridExport=${this._state.grid?.dailyExport}
                   .selfSufficiency=${this._state.selfSufficiency}
                   .showSelfSufficiency=${this._config.daily_totals.show_self_sufficiency ?? true}
+                  .productionEntity=${this._config.solar?.daily_production || null}
+                  .consumptionEntity=${this._config.home?.daily_consumption || null}
+                  .importEntity=${this._config.grid?.daily_import || null}
+                  .exportEntity=${this._config.grid?.daily_export || null}
                 ></energy-daily-totals>
               `
             : ""}
@@ -379,6 +388,10 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
                   .voltage=${this._state.battery?.voltage}
                   .current=${this._state.battery?.current}
                   .charging=${this._state.battery?.charging ?? false}
+                  .socEntity=${this._config.battery?.soc || null}
+                  .powerEntity=${this._config.battery?.power || null}
+                  .voltageEntity=${this._config.battery?.voltage || null}
+                  .currentEntity=${this._config.battery?.current || null}
                 ></energy-battery-summary>
               `
             : ""}
@@ -404,6 +417,9 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
                           .battery=${this._state.ups?.battery}
                           .status=${this._state.ups?.status}
                           .load=${this._state.ups?.load}
+                          .batteryEntity=${this._config.ups?.battery || null}
+                          .statusEntity=${this._config.ups?.status || null}
+                          .loadEntity=${this._config.ups?.load || null}
                         ></energy-ups-status>
                       `
                     : ""}

@@ -3,7 +3,7 @@
 
 import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { formatPower } from "../utils/power";
+import { formatPower, fireMoreInfo } from "../utils/power";
 import { BATTERY_SOC_LOW, BATTERY_SOC_CRITICAL } from "../const";
 
 @customElement("energy-battery-summary")
@@ -13,6 +13,10 @@ export class EnergyBatterySummary extends LitElement {
   @property({ type: Number }) voltage: number | null = null;
   @property({ type: Number }) current: number | null = null;
   @property({ type: Boolean }) charging = false;
+  @property({ type: String }) socEntity: string | null = null;
+  @property({ type: String }) powerEntity: string | null = null;
+  @property({ type: String }) voltageEntity: string | null = null;
+  @property({ type: String }) currentEntity: string | null = null;
 
   static styles = css`
     :host {
@@ -42,6 +46,14 @@ export class EnergyBatterySummary extends LitElement {
     .soc-container {
       flex: 1;
       min-width: 100px;
+    }
+
+    .soc-container.clickable {
+      cursor: pointer;
+    }
+
+    .soc-container.clickable:hover .soc-bar {
+      box-shadow: 0 0 0 2px var(--primary-color, #03a9f4);
     }
 
     .soc-bar {
@@ -85,7 +97,6 @@ export class EnergyBatterySummary extends LitElement {
     .stats-container {
       display: flex;
       gap: 8px;
-      flex: 0;
     }
 
     .stat {
@@ -94,6 +105,16 @@ export class EnergyBatterySummary extends LitElement {
       align-items: center;
       padding: 0 12px;
       border-left: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      border-radius: 8px;
+      transition: background 0.2s ease;
+    }
+
+    .stat.clickable {
+      cursor: pointer;
+    }
+
+    .stat.clickable:hover {
+      background: var(--divider-color, rgba(255, 255, 255, 0.1));
     }
 
     .stat:first-child {
@@ -171,7 +192,10 @@ export class EnergyBatterySummary extends LitElement {
     return html`
       <div class="section-title">Battery</div>
       <div class="battery-bar">
-        <div class="soc-container">
+        <div 
+          class="soc-container ${this.socEntity ? 'clickable' : ''}"
+          @click=${() => this._handleClick(this.socEntity)}
+        >
           <div class="soc-bar">
             <div class="${socFillClass}" style="width: ${soc}%"></div>
             <span class="soc-text">${soc.toFixed(1)}%</span>
@@ -179,21 +203,30 @@ export class EnergyBatterySummary extends LitElement {
         </div>
 
         <div class="stats-container">
-          <div class="stat">
+          <div 
+            class="stat ${this.voltageEntity ? 'clickable' : ''}"
+            @click=${() => this._handleClick(this.voltageEntity)}
+          >
             <span class="stat-value"
               >${this._formatVoltage(this.voltage)}</span
             >
             <span class="stat-label">Voltage</span>
           </div>
 
-          <div class="stat">
+          <div 
+            class="stat ${this.currentEntity ? 'clickable' : ''}"
+            @click=${() => this._handleClick(this.currentEntity)}
+          >
             <span class="stat-value"
               >${this._formatCurrent(this.current)}</span
             >
             <span class="stat-label">Current</span>
           </div>
 
-          <div class="stat power ${powerStateClass}">
+          <div 
+            class="stat power ${powerStateClass} ${this.powerEntity ? 'clickable' : ''}"
+            @click=${() => this._handleClick(this.powerEntity)}
+          >
             <span class="stat-value"
               >${formatPower(Math.abs(this.power ?? 0))}</span
             >
@@ -204,6 +237,10 @@ export class EnergyBatterySummary extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  private _handleClick(entityId: string | null): void {
+    fireMoreInfo(this, entityId);
   }
 
   private _formatVoltage(value: number | null): string {

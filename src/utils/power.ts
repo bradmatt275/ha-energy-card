@@ -58,3 +58,17 @@ export function formatPrice(price: number | null, currency: string = "$", decima
   if (price === null || price === undefined) return "—";
   return `${currency}${price.toFixed(decimals)}/kWh`;
 }
+
+/**
+ * Fire a Home Assistant more-info dialog event for an entity
+ */
+export function fireMoreInfo(element: HTMLElement, entityId: string | null | undefined): void {
+  if (!entityId) return;
+  
+  const event = new CustomEvent("hass-more-info", {
+    bubbles: true,
+    composed: true,
+    detail: { entityId },
+  });
+  element.dispatchEvent(event);
+}

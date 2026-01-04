@@ -4,7 +4,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { EnergySource, SolarArrayData } from "../types";
-import { formatPower } from "../utils/power";
+import { formatPower, fireMoreInfo } from "../utils/power";
 
 @customElement("energy-node")
 export class EnergyNode extends LitElement {
@@ -14,6 +14,7 @@ export class EnergyNode extends LitElement {
   @property({ type: Number }) power = 0;
   @property({ type: String }) status: string | undefined = undefined;
   @property({ type: Array }) arrays: SolarArrayData[] = [];
+  @property({ type: String }) entityId: string | null = null;
 
   static styles = css`
     :host {
@@ -29,6 +30,10 @@ export class EnergyNode extends LitElement {
       border-radius: 16px;
       min-width: 100px;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .node.clickable {
+      cursor: pointer;
     }
 
     .node:hover {
@@ -97,8 +102,13 @@ export class EnergyNode extends LitElement {
   `;
 
   protected render() {
+    const isClickable = !!this.entityId;
+    
     return html`
-      <div class="node node-${this.type}">
+      <div 
+        class="node node-${this.type} ${isClickable ? 'clickable' : ''}"
+        @click=${this._handleClick}
+      >
         <ha-icon class="node-icon" icon="${this.icon}"></ha-icon>
         <span class="node-label">${this.label}</span>
         <span class="node-power">${formatPower(Math.abs(this.power))}</span>
@@ -116,6 +126,10 @@ export class EnergyNode extends LitElement {
           : ""}
       </div>
     `;
+  }
+
+  private _handleClick(): void {
+    fireMoreInfo(this, this.entityId);
   }
 }
 

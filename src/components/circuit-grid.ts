@@ -4,7 +4,6 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { CircuitData } from "../types";
-import { formatPower } from "../utils/power";
 
 import "./circuit-chip";
 
@@ -120,19 +119,15 @@ export class EnergyCircuitGrid extends LitElement {
         ${this.circuits.map((circuit) => {
           const isHighlight =
             topConsumerNames.includes(circuit.name) && circuit.power > 0;
-          const isZero = circuit.power === 0;
-          const chipClass = `circuit-chip ${isHighlight ? "highlight" : ""} ${isZero ? "zero" : ""}`;
 
           return html`
-            <div class="${chipClass}">
-              <ha-icon class="circuit-icon" icon="${circuit.icon}"></ha-icon>
-              <div class="circuit-info">
-                <span class="circuit-name" title="${circuit.name}"
-                  >${circuit.name}</span
-                >
-                <span class="circuit-power">${formatPower(circuit.power)}</span>
-              </div>
-            </div>
+            <energy-circuit-chip
+              .name=${circuit.name}
+              .icon=${circuit.icon}
+              .power=${circuit.power}
+              .highlight=${isHighlight}
+              .entityId=${circuit.entity || null}
+            ></energy-circuit-chip>
           `;
         })}
       </div>

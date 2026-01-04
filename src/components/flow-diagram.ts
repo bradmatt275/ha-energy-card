@@ -11,7 +11,7 @@ import {
   FlowState,
   AnimationConfig,
 } from "../types";
-import { formatPower } from "../utils/power";
+import { formatPower, fireMoreInfo } from "../utils/power";
 import { getFlowSpeed, isFlowActive } from "../utils/flow";
 
 @customElement("energy-flow-diagram")
@@ -28,6 +28,12 @@ export class EnergyFlowDiagram extends LitElement {
   };
   @property({ type: Boolean }) showSolar = true;
   @property({ type: Boolean }) showBattery = true;
+  
+  // Entity IDs for click-to-show-details
+  @property({ type: String }) solarEntity: string | null = null;
+  @property({ type: String }) gridEntity: string | null = null;
+  @property({ type: String }) batteryEntity: string | null = null;
+  @property({ type: String }) homeEntity: string | null = null;
 
   static styles = css`
     :host {
@@ -294,6 +300,10 @@ export class EnergyFlowDiagram extends LitElement {
       transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
+    .node.clickable {
+      cursor: pointer;
+    }
+
     .node:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -408,7 +418,10 @@ export class EnergyFlowDiagram extends LitElement {
           ${this.showSolar
             ? html`
                 <div class="solar-area">
-                  <div class="node node-solar">
+                  <div 
+                    class="node node-solar ${this.solarEntity ? 'clickable' : ''}"
+                    @click=${() => this._handleNodeClick(this.solarEntity)}
+                  >
                     <ha-icon class="node-icon" icon="mdi:solar-power"></ha-icon>
                     <span class="node-label">Solar</span>
                     <span class="node-power">${formatPower(this.solar?.power || 0)}</span>
@@ -430,7 +443,10 @@ export class EnergyFlowDiagram extends LitElement {
 
           <!-- Grid Area (left) with flow line -->
           <div class="grid-area">
-            <div class="node node-grid">
+            <div 
+              class="node node-grid ${this.gridEntity ? 'clickable' : ''}"
+              @click=${() => this._handleNodeClick(this.gridEntity)}
+            >
               <ha-icon class="node-icon" icon="mdi:transmission-tower"></ha-icon>
               <span class="node-label">Grid</span>
               <span class="node-power">${formatPower(Math.abs(this.grid?.power || 0))}</span>
@@ -444,7 +460,10 @@ export class EnergyFlowDiagram extends LitElement {
 
           <!-- Home Area (center) -->
           <div class="home-area">
-            <div class="node node-home">
+            <div 
+              class="node node-home ${this.homeEntity ? 'clickable' : ''}"
+              @click=${() => this._handleNodeClick(this.homeEntity)}
+            >
               <ha-icon class="node-icon" icon="mdi:home"></ha-icon>
               <span class="node-label">Home</span>
               <span class="node-power">${formatPower(this.home?.power || 0)}</span>
@@ -457,7 +476,10 @@ export class EnergyFlowDiagram extends LitElement {
                 <div class="battery-area">
                   <!-- Home to Battery flow line -->
                   <div class="horizontal-flow battery ${batteryChargeActive ? "active" : batteryDischargeActive ? "active reverse" : ""} ${this._getSpeedClass(batteryChargeActive ? homeToBattery : batteryToHome)}"></div>
-                  <div class="node node-battery">
+                  <div 
+                    class="node node-battery ${this.batteryEntity ? 'clickable' : ''}"
+                    @click=${() => this._handleNodeClick(this.batteryEntity)}
+                  >
                     <ha-icon class="node-icon" icon="${this._getBatteryIcon()}"></ha-icon>
                     <span class="node-label">Battery</span>
                     <span class="node-power">${formatPower(Math.abs(this.battery?.power || 0))}</span>
@@ -479,6 +501,10 @@ export class EnergyFlowDiagram extends LitElement {
       return `speed-${this.animation.speed}`;
     }
     return `speed-${getFlowSpeed(power)}`;
+  }
+
+  private _handleNodeClick(entityId: string | null): void {
+    fireMoreInfo(this, entityId);
   }
 
   private _getBatteryIcon(): string {

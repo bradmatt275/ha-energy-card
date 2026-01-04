@@ -3,12 +3,16 @@
 
 import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators.js";
+import { fireMoreInfo } from "../utils/power";
 
 @customElement("energy-ups-status")
 export class EnergyUPSStatus extends LitElement {
   @property({ type: Number }) battery: number | null = null;
   @property({ type: String }) status: string | null = null;
   @property({ type: Number }) load: number | null = null;
+  @property({ type: String }) batteryEntity: string | null = null;
+  @property({ type: String }) statusEntity: string | null = null;
+  @property({ type: String }) loadEntity: string | null = null;
 
   static styles = css`
     :host {
@@ -63,6 +67,17 @@ export class EnergyUPSStatus extends LitElement {
       display: flex;
       align-items: center;
       gap: 4px;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: background 0.2s ease;
+    }
+
+    .ups-stat.clickable {
+      cursor: pointer;
+    }
+
+    .ups-stat.clickable:hover {
+      background: var(--divider-color, rgba(255, 255, 255, 0.1));
     }
 
     .ups-stat::before {
@@ -138,20 +153,35 @@ export class EnergyUPSStatus extends LitElement {
         <ha-icon class="${iconClass}" icon="${icon}"></ha-icon>
         <span class="ups-label">UPS</span>
         <div class="ups-info">
-          <span class="ups-stat ${batteryClass}">
+          <span 
+            class="ups-stat ${batteryClass} ${this.batteryEntity ? 'clickable' : ''}"
+            @click=${() => this._handleClick(this.batteryEntity)}
+          >
             ${this.battery !== null ? `${this.battery}%` : "—"}
           </span>
-          <span class="ups-stat ups-status">
+          <span 
+            class="ups-stat ups-status ${this.statusEntity ? 'clickable' : ''}"
+            @click=${() => this._handleClick(this.statusEntity)}
+          >
             ${this.status || "Unknown"}
           </span>
           ${this.load !== null
             ? html`
-                <span class="ups-stat ups-load"> ${this.load}% load </span>
+                <span 
+                  class="ups-stat ups-load ${this.loadEntity ? 'clickable' : ''}"
+                  @click=${() => this._handleClick(this.loadEntity)}
+                > 
+                  ${this.load}% load 
+                </span>
               `
             : ""}
         </div>
       </div>
     `;
+  }
+
+  private _handleClick(entityId: string | null): void {
+    fireMoreInfo(this, entityId);
   }
 }
 

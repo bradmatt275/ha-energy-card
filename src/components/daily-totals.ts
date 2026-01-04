@@ -3,6 +3,7 @@
 
 import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators.js";
+import { fireMoreInfo } from "../utils/power";
 
 @customElement("energy-daily-totals")
 export class EnergyDailyTotals extends LitElement {
@@ -12,6 +13,12 @@ export class EnergyDailyTotals extends LitElement {
   @property({ type: Number }) gridExport: number | null = null;
   @property({ type: Number }) selfSufficiency: number | null = null;
   @property({ type: Boolean }) showSelfSufficiency = true;
+  
+  // Entity IDs for click-to-show-details
+  @property({ type: String }) productionEntity: string | null = null;
+  @property({ type: String }) consumptionEntity: string | null = null;
+  @property({ type: String }) importEntity: string | null = null;
+  @property({ type: String }) exportEntity: string | null = null;
 
   static styles = css`
     :host {
@@ -42,11 +49,19 @@ export class EnergyDailyTotals extends LitElement {
       background: var(--card-background-color, var(--ha-card-background));
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       border-radius: 12px;
-      transition: transform 0.2s ease;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .total-card.clickable {
+      cursor: pointer;
     }
 
     .total-card:hover {
       transform: translateY(-2px);
+    }
+
+    .total-card.clickable:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
     .total-icon {
@@ -100,13 +115,19 @@ export class EnergyDailyTotals extends LitElement {
     return html`
       <div class="section-title">Today</div>
       <div class="totals-grid">
-        <div class="total-card">
+        <div 
+          class="total-card ${this.productionEntity ? 'clickable' : ''}"
+          @click=${() => this._handleClick(this.productionEntity)}
+        >
           <ha-icon class="total-icon solar" icon="mdi:solar-power"></ha-icon>
           <span class="total-value">${this._formatEnergy(this.production)}</span>
           <span class="total-label">Produced</span>
         </div>
 
-        <div class="total-card">
+        <div 
+          class="total-card ${this.consumptionEntity ? 'clickable' : ''}"
+          @click=${() => this._handleClick(this.consumptionEntity)}
+        >
           <ha-icon
             class="total-icon home"
             icon="mdi:home-lightning-bolt"
@@ -117,7 +138,10 @@ export class EnergyDailyTotals extends LitElement {
           <span class="total-label">Consumed</span>
         </div>
 
-        <div class="total-card">
+        <div 
+          class="total-card ${this.importEntity ? 'clickable' : ''}"
+          @click=${() => this._handleClick(this.importEntity)}
+        >
           <ha-icon
             class="total-icon import"
             icon="mdi:transmission-tower-import"
@@ -128,7 +152,10 @@ export class EnergyDailyTotals extends LitElement {
           <span class="total-label">Imported</span>
         </div>
 
-        <div class="total-card">
+        <div 
+          class="total-card ${this.exportEntity ? 'clickable' : ''}"
+          @click=${() => this._handleClick(this.exportEntity)}
+        >
           <ha-icon
             class="total-icon export"
             icon="mdi:transmission-tower-export"
@@ -152,6 +179,10 @@ export class EnergyDailyTotals extends LitElement {
           : ""}
       </div>
     `;
+  }
+
+  private _handleClick(entityId: string | null): void {
+    fireMoreInfo(this, entityId);
   }
 
   private _formatEnergy(value: number | null): string {
