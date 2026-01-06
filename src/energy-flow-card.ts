@@ -105,6 +105,7 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
         ...DEFAULT_DISPLAY_CONFIG,
         ...config.display,
       },
+      action_buttons: config.action_buttons,
     };
   }
 
@@ -408,8 +409,8 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
       return html`<ha-card><div class="loading">Loading...</div></ha-card>`;
     }
 
-    const hasLeftButtons = this._config.action_buttons?.left?.length;
-    const hasRightButtons = this._config.action_buttons?.right?.length;
+    const hasLeftButtons = this._config.action_buttons?.left?.filter(b => b.icon)?.length;
+    const hasRightButtons = this._config.action_buttons?.right?.filter(b => b.icon)?.length;
 
     return html`
       <ha-card>
@@ -427,14 +428,14 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
             ? html`
                 <div class="action-buttons-container">
                   <div class="action-buttons action-buttons-left">
-                    ${this._config.action_buttons?.left?.map(
-                      (btn) => this._renderActionButton(btn)
-                    )}
+                    ${this._config.action_buttons?.left
+                      ?.filter(btn => btn.icon)
+                      ?.map((btn) => this._renderActionButton(btn))}
                   </div>
                   <div class="action-buttons action-buttons-right">
-                    ${this._config.action_buttons?.right?.map(
-                      (btn) => this._renderActionButton(btn)
-                    )}
+                    ${this._config.action_buttons?.right
+                      ?.filter(btn => btn.icon)
+                      ?.map((btn) => this._renderActionButton(btn))}
                   </div>
                 </div>
               `
