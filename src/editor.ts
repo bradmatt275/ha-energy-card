@@ -447,7 +447,7 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
             <ha-icon icon="mdi:plus"></ha-icon>
             Add Entity
           </mwc-button>
-          <span class="help-text">Leave empty to calculate from Solar - Battery + Grid. Multiple entities will be summed (only positive values count).</span>
+          <span class="help-text">Leave empty to calculate from Solar - Battery + Grid. Multiple entities will be summed.</span>
         </div>
         <div class="form-group">
           <label>Daily Consumption</label>
