@@ -4,7 +4,7 @@
 import { LitElement, html, css, TemplateResult, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { HomeAssistant, fireEvent, LovelaceCardEditor } from "custom-card-helpers";
-import { EnergyFlowCardConfig, CircuitItemConfig, SolarArrayConfig } from "./types";
+import { EnergyFlowCardConfig, CircuitItemConfig, SolarArrayConfig, ActionButtonConfig, ActionConfig } from "./types";
 import { CARD_EDITOR_NAME } from "./const";
 
 @customElement(CARD_EDITOR_NAME)
@@ -171,6 +171,7 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
         ${this._renderHomeSection()}
         ${this._renderDailyTotalsSection()}
         ${this._renderCircuitsSection()}
+        ${this._renderActionButtonsSection()}
         ${this._renderUPSSection()}
         ${this._renderEVChargerSection()}
       </div>
@@ -1010,6 +1011,228 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
     this._config = {
       ...this._config,
       circuits: { ...this._config.circuits, items },
+    };
+    this._fireConfigChanged();
+  }
+
+  // ============================================================================
+  // Action Buttons Section
+  // ============================================================================
+
+  private _renderActionButtonsSection(): TemplateResult {
+    const leftButtons = this._config.action_buttons?.left || [];
+    const rightButtons = this._config.action_buttons?.right || [];
+
+    return html`
+      <div class="section">
+        <div class="section-title">
+          <ha-icon icon="mdi:gesture-tap-button"></ha-icon>
+          Action Buttons
+        </div>
+        
+        <div class="form-group">
+          <label>Left Side Buttons</label>
+          <div class="items-list">
+            ${leftButtons.map((btn, index) => this._renderActionButtonItem(btn, index, "left"))}
+          </div>
+          <mwc-button @click=${() => this._addActionButton("left")}>
+            <ha-icon icon="mdi:plus"></ha-icon>
+            Add Button
+          </mwc-button>
+        </div>
+
+        <div class="form-group">
+          <label>Right Side Buttons</label>
+          <div class="items-list">
+            ${rightButtons.map((btn, index) => this._renderActionButtonItem(btn, index, "right"))}
+          </div>
+          <mwc-button @click=${() => this._addActionButton("right")}>
+            <ha-icon icon="mdi:plus"></ha-icon>
+            Add Button
+          </mwc-button>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderActionButtonItem(button: ActionButtonConfig, index: number, side: "left" | "right"): TemplateResult {
+    const actionType = button.tap_action?.action || "navigate";
+    
+    return html`
+      <div class="list-item">
+        <mwc-icon-button
+          class="delete-button"
+          @click=${() => this._removeActionButton(side, index)}
+          title="Remove button"
+        >
+          <ha-icon icon="mdi:delete"></ha-icon>
+        </mwc-icon-button>
+
+        <div class="list-item-row">
+          <div class="form-group">
+            <label>Icon</label>
+            <ha-selector
+              .hass=${this.hass}
+              .selector=${{ icon: {} }}
+              .value=${button.icon || "mdi:gesture-tap"}
+              @value-changed=${(e: CustomEvent) => this._updateActionButton(side, index, "icon", e.detail.value)}
+            ></ha-selector>
+          </div>
+          <div class="form-group">
+            <label>Tooltip</label>
+            <ha-textfield
+              .value=${button.tooltip || ""}
+              @input=${(e: Event) => this._updateActionButton(side, index, "tooltip", (e.target as HTMLInputElement).value)}
+            ></ha-textfield>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Action Type</label>
+          <ha-select
+            .value=${actionType}
+            @selected=${(e: CustomEvent) => this._updateActionButtonAction(side, index, "action", (e.target as HTMLSelectElement).value)}
+            @closed=${(e: Event) => e.stopPropagation()}
+          >
+            <mwc-list-item value="navigate">Navigate</mwc-list-item>
+            <mwc-list-item value="more-info">More Info</mwc-list-item>
+            <mwc-list-item value="toggle">Toggle</mwc-list-item>
+            <mwc-list-item value="call-service">Call Service</mwc-list-item>
+            <mwc-list-item value="url">Open URL</mwc-list-item>
+            <mwc-list-item value="none">None</mwc-list-item>
+          </ha-select>
+        </div>
+
+        ${this._renderActionFields(button, side, index)}
+      </div>
+    `;
+  }
+
+  private _renderActionFields(button: ActionButtonConfig, side: "left" | "right", index: number): TemplateResult {
+    const actionType = button.tap_action?.action || "navigate";
+
+    switch (actionType) {
+      case "navigate":
+        return html`
+          <div class="form-group">
+            <label>Navigation Path</label>
+            <ha-textfield
+              .value=${button.tap_action?.navigation_path || ""}
+              placeholder="#popup-name or /lovelace/view"
+              @input=${(e: Event) => this._updateActionButtonAction(side, index, "navigation_path", (e.target as HTMLInputElement).value)}
+            ></ha-textfield>
+          </div>
+        `;
+
+      case "more-info":
+      case "toggle":
+        return html`
+          <div class="form-group">
+            <label>Entity</label>
+            <ha-selector
+              .hass=${this.hass}
+              .selector=${{ entity: {} }}
+              .value=${button.tap_action?.entity || ""}
+              @value-changed=${(e: CustomEvent) => this._updateActionButtonAction(side, index, "entity", e.detail.value)}
+            ></ha-selector>
+          </div>
+        `;
+
+      case "call-service":
+        return html`
+          <div class="form-group">
+            <label>Service</label>
+            <ha-textfield
+              .value=${button.tap_action?.service || ""}
+              placeholder="domain.service"
+              @input=${(e: Event) => this._updateActionButtonAction(side, index, "service", (e.target as HTMLInputElement).value)}
+            ></ha-textfield>
+            <span class="help-text">For advanced service_data, edit YAML directly</span>
+          </div>
+        `;
+
+      case "url":
+        return html`
+          <div class="form-group">
+            <label>URL</label>
+            <ha-textfield
+              .value=${button.tap_action?.url_path || ""}
+              placeholder="https://example.com"
+              @input=${(e: Event) => this._updateActionButtonAction(side, index, "url_path", (e.target as HTMLInputElement).value)}
+            ></ha-textfield>
+          </div>
+        `;
+
+      default:
+        return html``;
+    }
+  }
+
+  private _addActionButton(side: "left" | "right"): void {
+    const buttons = [...(this._config.action_buttons?.[side] || [])];
+    buttons.push({ 
+      icon: "mdi:gesture-tap", 
+      tap_action: { action: "navigate", navigation_path: "" } 
+    });
+    this._config = {
+      ...this._config,
+      action_buttons: { 
+        ...this._config.action_buttons, 
+        [side]: buttons 
+      },
+    };
+    this._fireConfigChanged();
+  }
+
+  private _removeActionButton(side: "left" | "right", index: number): void {
+    const buttons = [...(this._config.action_buttons?.[side] || [])];
+    buttons.splice(index, 1);
+    this._config = {
+      ...this._config,
+      action_buttons: { 
+        ...this._config.action_buttons, 
+        [side]: buttons 
+      },
+    };
+    this._fireConfigChanged();
+  }
+
+  private _updateActionButton(side: "left" | "right", index: number, field: string, value: string): void {
+    const buttons = [...(this._config.action_buttons?.[side] || [])];
+    buttons[index] = { ...buttons[index], [field]: value };
+    this._config = {
+      ...this._config,
+      action_buttons: { 
+        ...this._config.action_buttons, 
+        [side]: buttons 
+      },
+    };
+    this._fireConfigChanged();
+  }
+
+  private _updateActionButtonAction(side: "left" | "right", index: number, field: string, value: string): void {
+    const buttons = [...(this._config.action_buttons?.[side] || [])];
+    const currentAction = buttons[index].tap_action || { action: "navigate" as const };
+    
+    // If changing action type, reset other fields
+    if (field === "action") {
+      buttons[index] = { 
+        ...buttons[index], 
+        tap_action: { action: value as ActionConfig["action"] } 
+      };
+    } else {
+      buttons[index] = { 
+        ...buttons[index], 
+        tap_action: { ...currentAction, [field]: value } 
+      };
+    }
+    
+    this._config = {
+      ...this._config,
+      action_buttons: { 
+        ...this._config.action_buttons, 
+        [side]: buttons 
+      },
     };
     this._fireConfigChanged();
   }

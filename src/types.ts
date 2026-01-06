@@ -21,6 +21,29 @@ export interface EnergyFlowCardConfig extends LovelaceCardConfig {
   ev_charger?: EVChargerConfig;
   inverter?: InverterConfig;
   display?: DisplayConfig;
+  action_buttons?: ActionButtonsConfig;
+}
+
+export interface ActionButtonsConfig {
+  left?: ActionButtonConfig[];
+  right?: ActionButtonConfig[];
+}
+
+export interface ActionButtonConfig {
+  icon: string;
+  tap_action?: ActionConfig;
+  hold_action?: ActionConfig;
+  tooltip?: string;
+}
+
+export interface ActionConfig {
+  action: "navigate" | "call-service" | "more-info" | "toggle" | "url" | "none";
+  navigation_path?: string;
+  url_path?: string;
+  service?: string;
+  service_data?: Record<string, unknown>;
+  target?: Record<string, unknown>;
+  entity?: string;
 }
 
 export interface AnimationConfig {

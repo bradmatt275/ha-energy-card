@@ -9,6 +9,8 @@ import {
   EnergyFlowCardConfig,
   EnergyState,
   CircuitData,
+  ActionButtonConfig,
+  ActionConfig,
 } from "./types";
 
 import {
@@ -346,6 +348,55 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
         flex-direction: column;
       }
     }
+
+    /* Action Buttons */
+    .action-buttons-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .action-buttons-left {
+      justify-content: flex-start;
+    }
+
+    .action-buttons-right {
+      justify-content: flex-end;
+    }
+
+    .action-button {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+      color: var(--primary-text-color);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+      padding: 0;
+    }
+
+    .action-button:hover {
+      background: var(--primary-color);
+      color: var(--text-primary-color, #fff);
+    }
+
+    .action-button:active {
+      transform: scale(0.95);
+    }
+
+    .action-button ha-icon {
+      --mdc-icon-size: 20px;
+    }
   `;
 
   protected render(): TemplateResult {
@@ -356,6 +407,9 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
     if (!this._state) {
       return html`<ha-card><div class="loading">Loading...</div></ha-card>`;
     }
+
+    const hasLeftButtons = this._config.action_buttons?.left?.length;
+    const hasRightButtons = this._config.action_buttons?.right?.length;
 
     return html`
       <ha-card>
@@ -368,6 +422,24 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
           : ""}
 
         <div class="card-content">
+          <!-- Action Buttons Container -->
+          ${hasLeftButtons || hasRightButtons
+            ? html`
+                <div class="action-buttons-container">
+                  <div class="action-buttons action-buttons-left">
+                    ${this._config.action_buttons?.left?.map(
+                      (btn) => this._renderActionButton(btn)
+                    )}
+                  </div>
+                  <div class="action-buttons action-buttons-right">
+                    ${this._config.action_buttons?.right?.map(
+                      (btn) => this._renderActionButton(btn)
+                    )}
+                  </div>
+                </div>
+              `
+            : ""}
+
           <!-- Energy Flow Diagram -->
           <energy-flow-diagram
             .solar=${this._state.solar}
@@ -494,7 +566,72 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
       </ha-card>
     `;
   }
-}
+  private _renderActionButton(button: ActionButtonConfig): TemplateResult {
+    return html`
+      <button
+        class="action-button"
+        title=${button.tooltip || ""}
+        @click=${() => this._handleAction(button.tap_action)}
+        @contextmenu=${(e: Event) => {
+          if (button.hold_action) {
+            e.preventDefault();
+            this._handleAction(button.hold_action);
+          }
+        }}
+      >
+        <ha-icon icon=${button.icon}></ha-icon>
+      </button>
+    `;
+  }
+
+  private _handleAction(action?: ActionConfig): void {
+    if (!action || action.action === "none") return;
+
+    switch (action.action) {
+      case "navigate":
+        if (action.navigation_path) {
+          history.pushState(null, "", action.navigation_path);
+          const event = new CustomEvent("location-changed", {
+            bubbles: true,
+            composed: true,
+          });
+          this.dispatchEvent(event);
+        }
+        break;
+
+      case "url":
+        if (action.url_path) {
+          window.open(action.url_path, "_blank");
+        }
+        break;
+
+      case "more-info":
+        if (action.entity) {
+          const event = new CustomEvent("hass-more-info", {
+            bubbles: true,
+            composed: true,
+            detail: { entityId: action.entity },
+          });
+          this.dispatchEvent(event);
+        }
+        break;
+
+      case "toggle":
+        if (action.entity) {
+          this.hass.callService("homeassistant", "toggle", {
+            entity_id: action.entity,
+          });
+        }
+        break;
+
+      case "call-service":
+        if (action.service) {
+          const [domain, service] = action.service.split(".");
+          this.hass.callService(domain, service, action.service_data, action.target);
+        }
+        break;
+    }
+  }}
 
 declare global {
   interface HTMLElementTagNameMap {
