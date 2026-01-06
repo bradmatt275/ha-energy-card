@@ -61,7 +61,7 @@ export interface BatteryConfig {
 }
 
 export interface HomeConfig {
-  power?: string;
+  power?: string | string[];
   daily_consumption?: string;
 }
 

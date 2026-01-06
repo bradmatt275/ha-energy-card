@@ -429,6 +429,9 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
   }
 
   private _renderHomeSection(): TemplateResult {
+    // Normalize power config to array for display
+    const powerEntities = this._getHomePowerEntities();
+    
     return html`
       <div class="section">
         <div class="section-title">
@@ -436,14 +439,15 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
           Home
         </div>
         <div class="form-group">
-          <label>Home Power (optional)</label>
-          <ha-selector
-            .hass=${this.hass}
-            .selector=${{ entity: { domain: ["sensor"] } }}
-            .value=${this._config.home?.power || ""}
-            @value-changed=${(e: CustomEvent) => this._updateHome("power", e.detail.value || "")}
-          ></ha-selector>
-          <span class="help-text">Leave empty to calculate from Solar - Battery + Grid</span>
+          <label>Home Power Entities (optional)</label>
+          <div class="items-list">
+            ${powerEntities.map((entity, index) => this._renderHomePowerItem(entity, index))}
+          </div>
+          <mwc-button @click=${this._addHomePowerEntity}>
+            <ha-icon icon="mdi:plus"></ha-icon>
+            Add Entity
+          </mwc-button>
+          <span class="help-text">Leave empty to calculate from Solar - Battery + Grid. Multiple entities will be summed (only positive values count).</span>
         </div>
         <div class="form-group">
           <label>Daily Consumption</label>
@@ -456,6 +460,66 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
         </div>
       </div>
     `;
+  }
+
+  private _getHomePowerEntities(): string[] {
+    const power = this._config.home?.power;
+    if (!power) return [];
+    if (Array.isArray(power)) return power;
+    return [power];
+  }
+
+  private _renderHomePowerItem(entity: string, index: number): TemplateResult {
+    return html`
+      <div class="list-item">
+        <mwc-icon-button
+          class="delete-button"
+          @click=${() => this._removeHomePowerEntity(index)}
+          title="Remove entity"
+        >
+          <ha-icon icon="mdi:delete"></ha-icon>
+        </mwc-icon-button>
+        <div class="form-group">
+          <label>Power Entity</label>
+          <ha-selector
+            .hass=${this.hass}
+            .selector=${{ entity: { domain: ["sensor"] } }}
+            .value=${entity || ""}
+            @value-changed=${(e: CustomEvent) => this._updateHomePowerEntity(index, e.detail.value || "")}
+          ></ha-selector>
+        </div>
+      </div>
+    `;
+  }
+
+  private _addHomePowerEntity(): void {
+    const current = this._getHomePowerEntities();
+    this._updateHome("power", [...current, ""]);
+  }
+
+  private _removeHomePowerEntity(index: number): void {
+    const current = this._getHomePowerEntities();
+    const updated = current.filter((_, i) => i !== index);
+    // If empty or single item, store appropriately
+    if (updated.length === 0) {
+      this._updateHome("power", "");
+    } else if (updated.length === 1) {
+      this._updateHome("power", updated[0]);
+    } else {
+      this._updateHome("power", updated);
+    }
+  }
+
+  private _updateHomePowerEntity(index: number, value: string): void {
+    const current = this._getHomePowerEntities();
+    const updated = [...current];
+    updated[index] = value;
+    // Store as single value if only one entity, otherwise as array
+    if (updated.length === 1) {
+      this._updateHome("power", updated[0]);
+    } else {
+      this._updateHome("power", updated);
+    }
   }
 
   private _renderDailyTotalsSection(): TemplateResult {

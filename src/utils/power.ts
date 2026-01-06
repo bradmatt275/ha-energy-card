@@ -60,6 +60,19 @@ export function formatPrice(price: number | null, currency: string = "$", decima
 }
 
 /**
+ * Sum only positive power values from an array of numbers
+ * Useful for home consumption calculation where negative values (e.g., export) should not reduce consumption
+ */
+export function sumPositivePowers(values: (number | null | undefined)[]): number {
+  return values.reduce((sum: number, value) => {
+    if (value !== null && value !== undefined && value > 0) {
+      return sum + value;
+    }
+    return sum;
+  }, 0);
+}
+
+/**
  * Fire a Home Assistant more-info dialog event for an entity
  */
 export function fireMoreInfo(element: HTMLElement, entityId: string | null | undefined): void {

@@ -26,6 +26,8 @@ import {
   calculateTotalSolarPower,
 } from "./utils/flow";
 
+import { sumPositivePowers } from "./utils/power";
+
 // Import components
 import "./components/flow-diagram";
 import "./components/daily-totals";
@@ -168,7 +170,15 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
     // Calculate or get home consumption
     let homePower = 0;
     if (this._config.home?.power) {
-      homePower = this._getNumericState(this._config.home.power) ?? 0;
+      const powerConfig = this._config.home.power;
+      if (Array.isArray(powerConfig)) {
+        // Sum only positive values from multiple entities
+        const values = powerConfig.map(entity => this._getNumericState(entity));
+        homePower = sumPositivePowers(values);
+      } else {
+        // Single entity - use value directly (backward compatible)
+        homePower = this._getNumericState(powerConfig) ?? 0;
+      }
     } else {
       homePower = calculateHomePower(solarPower, gridPower, batteryPower);
     }
