@@ -171,14 +171,10 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
     let homePower = 0;
     if (this._config.home?.power) {
       const powerConfig = this._config.home.power;
-      if (Array.isArray(powerConfig)) {
-        // Sum only positive values from multiple entities
-        const values = powerConfig.map(entity => this._getNumericState(entity));
-        homePower = sumPositivePowers(values);
-      } else {
-        // Single entity - use value directly (backward compatible)
-        homePower = this._getNumericState(powerConfig) ?? 0;
-      }
+      const entities = Array.isArray(powerConfig) ? powerConfig : [powerConfig];
+      // Sum only positive values - negative values (e.g., export) don't contribute to home consumption
+      const values = entities.map(entity => this._getNumericState(entity));
+      homePower = sumPositivePowers(values);
     } else {
       homePower = calculateHomePower(solarPower, gridPower, batteryPower);
     }

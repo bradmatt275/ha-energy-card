@@ -500,26 +500,14 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
   private _removeHomePowerEntity(index: number): void {
     const current = this._getHomePowerEntities();
     const updated = current.filter((_, i) => i !== index);
-    // If empty or single item, store appropriately
-    if (updated.length === 0) {
-      this._updateHome("power", "");
-    } else if (updated.length === 1) {
-      this._updateHome("power", updated[0]);
-    } else {
-      this._updateHome("power", updated);
-    }
+    this._updateHome("power", updated);
   }
 
   private _updateHomePowerEntity(index: number, value: string): void {
     const current = this._getHomePowerEntities();
     const updated = [...current];
     updated[index] = value;
-    // Store as single value if only one entity, otherwise as array
-    if (updated.length === 1) {
-      this._updateHome("power", updated[0]);
-    } else {
-      this._updateHome("power", updated);
-    }
+    this._updateHome("power", updated);
   }
 
   private _renderDailyTotalsSection(): TemplateResult {
