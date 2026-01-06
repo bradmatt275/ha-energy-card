@@ -372,8 +372,8 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
     }
 
     .action-button {
-      width: 40px;
-      height: 40px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       border: none;
       background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
@@ -396,7 +396,7 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
     }
 
     .action-button ha-icon {
-      --mdc-icon-size: 20px;
+      --mdc-icon-size: 24px;
     }
   `;
 
