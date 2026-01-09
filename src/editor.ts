@@ -451,13 +451,15 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
           <span class="help-text">Leave empty to calculate from Solar - Battery + Grid. Multiple entities will be summed.</span>
         </div>
         <div class="form-group">
-          <label>Daily Consumption</label>
-          <ha-selector
-            .hass=${this.hass}
-            .selector=${{ entity: { domain: ["sensor"] } }}
-            .value=${this._config.home?.daily_consumption || ""}
-            @value-changed=${(e: CustomEvent) => this._updateHome("daily_consumption", e.detail.value || "")}
-          ></ha-selector>
+          <label>Daily Consumption Entities</label>
+          <div class="items-list">
+            ${this._getDailyConsumptionEntities().map((entity, index) => this._renderDailyConsumptionItem(entity, index))}
+          </div>
+          <mwc-button @click=${this._addDailyConsumptionEntity}>
+            <ha-icon icon="mdi:plus"></ha-icon>
+            Add Entity
+          </mwc-button>
+          <span class="help-text">Multiple entities will be summed.</span>
         </div>
       </div>
     `;
@@ -509,6 +511,55 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
     const updated = [...current];
     updated[index] = value;
     this._updateHome("power", updated);
+  }
+
+  // Daily Consumption entity management
+  private _getDailyConsumptionEntities(): string[] {
+    const consumption = this._config.home?.daily_consumption;
+    if (!consumption) return [];
+    if (Array.isArray(consumption)) return consumption;
+    return [consumption];
+  }
+
+  private _renderDailyConsumptionItem(entity: string, index: number): TemplateResult {
+    return html`
+      <div class="list-item">
+        <mwc-icon-button
+          class="delete-button"
+          @click=${() => this._removeDailyConsumptionEntity(index)}
+          title="Remove entity"
+        >
+          <ha-icon icon="mdi:delete"></ha-icon>
+        </mwc-icon-button>
+        <div class="form-group">
+          <label>Consumption Entity</label>
+          <ha-selector
+            .hass=${this.hass}
+            .selector=${{ entity: { domain: ["sensor"] } }}
+            .value=${entity || ""}
+            @value-changed=${(e: CustomEvent) => this._updateDailyConsumptionEntity(index, e.detail.value || "")}
+          ></ha-selector>
+        </div>
+      </div>
+    `;
+  }
+
+  private _addDailyConsumptionEntity(): void {
+    const current = this._getDailyConsumptionEntities();
+    this._updateHome("daily_consumption", [...current, ""]);
+  }
+
+  private _removeDailyConsumptionEntity(index: number): void {
+    const current = this._getDailyConsumptionEntities();
+    const updated = current.filter((_, i) => i !== index);
+    this._updateHome("daily_consumption", updated);
+  }
+
+  private _updateDailyConsumptionEntity(index: number, value: string): void {
+    const current = this._getDailyConsumptionEntities();
+    const updated = [...current];
+    updated[index] = value;
+    this._updateHome("daily_consumption", updated);
   }
 
   private _renderDailyTotalsSection(): TemplateResult {
