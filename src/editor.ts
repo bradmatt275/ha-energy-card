@@ -1265,8 +1265,12 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
     const buttons = [...(this._config.action_buttons?.[side] || [])];
     const currentAction = buttons[index].tap_action || { action: "navigate" as const };
     
-    // If changing action type, reset other fields
+    // If changing action type, reset other fields only if action actually changed
     if (field === "action") {
+      // Don't reset if the action type hasn't actually changed
+      if (currentAction.action === value) {
+        return;
+      }
       buttons[index] = { 
         ...buttons[index], 
         tap_action: { action: value as ActionConfig["action"] } 
