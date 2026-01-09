@@ -464,7 +464,7 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
             .showBattery=${this._config.battery?.show ?? false}
             .solarEntity=${this._config.solar?.total_power || this._config.solar?.arrays?.[0]?.power || null}
             .gridEntity=${this._config.grid?.power || null}
-            .batteryEntity=${this._config.battery?.soc || this._config.battery?.power || null}
+            .batteryEntity=${this._config.battery?.power || this._config.battery?.soc || null}
             .homeEntity=${this._config.home?.power || null}
           ></energy-flow-diagram>
 
