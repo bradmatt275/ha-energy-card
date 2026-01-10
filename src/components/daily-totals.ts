@@ -92,6 +92,9 @@ export class EnergyDailyTotals extends LitElement {
     .total-icon.battery {
       color: #22c55e;
     }
+    .total-icon.discharge {
+      color: #f59e0b;
+    }
     .total-icon.self {
       color: #4caf50;
     }
@@ -105,15 +108,15 @@ export class EnergyDailyTotals extends LitElement {
 
     .combined-values {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       align-items: center;
-      gap: 2px;
+      gap: 8px;
     }
 
     .combined-row {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 2px;
       font-size: 14px;
       font-weight: 600;
       font-family: "SF Mono", "Monaco", "Inconsolata", "Roboto Mono", monospace;
@@ -191,7 +194,9 @@ export class EnergyDailyTotals extends LitElement {
 
         ${this.compactLayout ? this._renderCombinedGridCard() : this._renderSeparateGridCards()}
 
-        ${this.compactLayout && this._hasBatteryDaily ? this._renderBatteryCard() : nothing}
+        ${this._hasBatteryDaily 
+          ? (this.compactLayout ? this._renderCombinedBatteryCard() : this._renderSeparateBatteryCards())
+          : nothing}
 
         ${this.showSelfSufficiency
           ? html`
@@ -253,7 +258,39 @@ export class EnergyDailyTotals extends LitElement {
     `;
   }
 
-  private _renderBatteryCard() {
+  private _renderSeparateBatteryCards() {
+    return html`
+      ${this.chargeEntity ? html`
+        <div 
+          class="total-card clickable"
+          @click=${() => this._handleClick(this.chargeEntity)}
+        >
+          <ha-icon
+            class="total-icon battery"
+            icon="mdi:battery-arrow-up"
+          ></ha-icon>
+          <span class="total-value">${this._formatEnergy(this.batteryCharge)}</span>
+          <span class="total-label">Charged</span>
+        </div>
+      ` : nothing}
+
+      ${this.dischargeEntity ? html`
+        <div 
+          class="total-card clickable"
+          @click=${() => this._handleClick(this.dischargeEntity)}
+        >
+          <ha-icon
+            class="total-icon discharge"
+            icon="mdi:battery-arrow-down"
+          ></ha-icon>
+          <span class="total-value">${this._formatEnergy(this.batteryDischarge)}</span>
+          <span class="total-label">Discharged</span>
+        </div>
+      ` : nothing}
+    `;
+  }
+
+  private _renderCombinedBatteryCard() {
     return html`
       <div class="total-card">
         <ha-icon class="total-icon battery" icon="mdi:battery-charging"></ha-icon>
