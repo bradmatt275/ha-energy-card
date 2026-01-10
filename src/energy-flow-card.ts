@@ -204,6 +204,9 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
     const dailyImport = this._getNumericState(this._config.grid?.daily_import);
     const dailyExport = this._getNumericState(this._config.grid?.daily_export);
     
+    // Get battery daily charge for consumption calculation
+    const dailyBatteryCharge = this._getNumericState(this._config.battery?.daily_charge);
+    
     // Calculate daily consumption from array or single entity
     let dailyConsumption: number | null = null;
     const consumptionConfig = this._config.home?.daily_consumption;
@@ -217,9 +220,9 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
         dailyConsumption = values.reduce((sum, val) => sum + val, 0);
       }
     } else {
-      // Auto-calculate: Solar Production - Grid Export + Grid Import
+      // Auto-calculate: Solar Production - Grid Export + Grid Import - Battery Charge
       if (dailyProduction !== null || dailyImport !== null || dailyExport !== null) {
-        dailyConsumption = (dailyProduction ?? 0) - (dailyExport ?? 0) + (dailyImport ?? 0);
+        dailyConsumption = (dailyProduction ?? 0) - (dailyExport ?? 0) + (dailyImport ?? 0) - (dailyBatteryCharge ?? 0);
       }
     }
 
@@ -484,12 +487,17 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
                   .consumption=${this._state.home?.dailyConsumption}
                   .gridImport=${this._state.grid?.dailyImport}
                   .gridExport=${this._state.grid?.dailyExport}
+                  .batteryCharge=${this._getNumericState(this._config.battery?.daily_charge)}
+                  .batteryDischarge=${this._getNumericState(this._config.battery?.daily_discharge)}
                   .selfSufficiency=${this._state.selfSufficiency}
                   .showSelfSufficiency=${this._config.daily_totals.show_self_sufficiency ?? true}
+                  .compactLayout=${this._config.daily_totals.compact_layout ?? false}
                   .productionEntity=${this._config.solar?.daily_production || null}
                   .consumptionEntity=${this._config.home?.daily_consumption || null}
                   .importEntity=${this._config.grid?.daily_import || null}
                   .exportEntity=${this._config.grid?.daily_export || null}
+                  .chargeEntity=${this._config.battery?.daily_charge || null}
+                  .dischargeEntity=${this._config.battery?.daily_discharge || null}
                 ></energy-daily-totals>
               `
             : ""}

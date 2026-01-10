@@ -81,6 +81,8 @@ export interface BatteryConfig {
   voltage?: string;
   current?: string;
   state?: string;
+  daily_charge?: string;
+  daily_discharge?: string;
 }
 
 export interface HomeConfig {
@@ -104,6 +106,7 @@ export interface CircuitItemConfig {
 export interface DailyTotalsConfig {
   show?: boolean;
   show_self_sufficiency?: boolean;
+  compact_layout?: boolean;
 }
 
 export interface UPSConfig {

@@ -1,7 +1,7 @@
 // src/components/daily-totals.ts
 // Daily energy totals row component
 
-import { LitElement, html, css } from "lit";
+import { LitElement, html, css, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { fireMoreInfo } from "../utils/power";
 
@@ -11,14 +11,19 @@ export class EnergyDailyTotals extends LitElement {
   @property({ type: Number }) consumption: number | null = null;
   @property({ type: Number }) gridImport: number | null = null;
   @property({ type: Number }) gridExport: number | null = null;
+  @property({ type: Number }) batteryCharge: number | null = null;
+  @property({ type: Number }) batteryDischarge: number | null = null;
   @property({ type: Number }) selfSufficiency: number | null = null;
   @property({ type: Boolean }) showSelfSufficiency = true;
+  @property({ type: Boolean }) compactLayout = false;
   
   // Entity IDs for click-to-show-details
   @property({ type: String }) productionEntity: string | null = null;
   @property({ type: String }) consumptionEntity: string | null = null;
   @property({ type: String }) importEntity: string | null = null;
   @property({ type: String }) exportEntity: string | null = null;
+  @property({ type: String }) chargeEntity: string | null = null;
+  @property({ type: String }) dischargeEntity: string | null = null;
 
   static styles = css`
     :host {
@@ -81,6 +86,12 @@ export class EnergyDailyTotals extends LitElement {
     .total-icon.export {
       color: #10b981;
     }
+    .total-icon.grid {
+      color: #3b82f6;
+    }
+    .total-icon.battery {
+      color: #22c55e;
+    }
     .total-icon.self {
       color: #4caf50;
     }
@@ -90,6 +101,43 @@ export class EnergyDailyTotals extends LitElement {
       font-weight: 600;
       color: var(--primary-text-color);
       font-family: "SF Mono", "Monaco", "Inconsolata", "Roboto Mono", monospace;
+    }
+
+    .combined-values {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .combined-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: "SF Mono", "Monaco", "Inconsolata", "Roboto Mono", monospace;
+    }
+
+    .combined-row .arrow {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    .combined-row.import-row {
+      color: #3b82f6;
+    }
+
+    .combined-row.export-row {
+      color: #10b981;
+    }
+
+    .combined-row.charge-row {
+      color: #22c55e;
+    }
+
+    .combined-row.discharge-row {
+      color: #f59e0b;
     }
 
     .total-label {
@@ -110,6 +158,11 @@ export class EnergyDailyTotals extends LitElement {
       }
     }
   `;
+
+  // Check if battery daily entities are configured
+  private get _hasBatteryDaily(): boolean {
+    return !!(this.chargeEntity || this.dischargeEntity);
+  }
 
   protected render() {
     return html`
@@ -132,51 +185,89 @@ export class EnergyDailyTotals extends LitElement {
             class="total-icon home"
             icon="mdi:home-lightning-bolt"
           ></ha-icon>
-          <span class="total-value"
-            >${this._formatEnergy(this.consumption)}</span
-          >
+          <span class="total-value">${this._formatEnergy(this.consumption)}</span>
           <span class="total-label">Consumed</span>
         </div>
 
-        <div 
-          class="total-card ${this.importEntity ? 'clickable' : ''}"
-          @click=${() => this._handleClick(this.importEntity)}
-        >
-          <ha-icon
-            class="total-icon import"
-            icon="mdi:transmission-tower-import"
-          ></ha-icon>
-          <span class="total-value"
-            >${this._formatEnergy(this.gridImport)}</span
-          >
-          <span class="total-label">Imported</span>
-        </div>
+        ${this.compactLayout ? this._renderCombinedGridCard() : this._renderSeparateGridCards()}
 
-        <div 
-          class="total-card ${this.exportEntity ? 'clickable' : ''}"
-          @click=${() => this._handleClick(this.exportEntity)}
-        >
-          <ha-icon
-            class="total-icon export"
-            icon="mdi:transmission-tower-export"
-          ></ha-icon>
-          <span class="total-value"
-            >${this._formatEnergy(this.gridExport)}</span
-          >
-          <span class="total-label">Exported</span>
-        </div>
+        ${this.compactLayout && this._hasBatteryDaily ? this._renderBatteryCard() : nothing}
 
         ${this.showSelfSufficiency
           ? html`
               <div class="total-card">
                 <ha-icon class="total-icon self" icon="mdi:percent"></ha-icon>
-                <span class="total-value"
-                  >${this._formatPercent(this.selfSufficiency)}</span
-                >
+                <span class="total-value">${this._formatPercent(this.selfSufficiency)}</span>
                 <span class="total-label">Self-use</span>
               </div>
             `
-          : ""}
+          : nothing}
+      </div>
+    `;
+  }
+
+  private _renderSeparateGridCards() {
+    return html`
+      <div 
+        class="total-card ${this.importEntity ? 'clickable' : ''}"
+        @click=${() => this._handleClick(this.importEntity)}
+      >
+        <ha-icon
+          class="total-icon import"
+          icon="mdi:transmission-tower-import"
+        ></ha-icon>
+        <span class="total-value">${this._formatEnergy(this.gridImport)}</span>
+        <span class="total-label">Imported</span>
+      </div>
+
+      <div 
+        class="total-card ${this.exportEntity ? 'clickable' : ''}"
+        @click=${() => this._handleClick(this.exportEntity)}
+      >
+        <ha-icon
+          class="total-icon export"
+          icon="mdi:transmission-tower-export"
+        ></ha-icon>
+        <span class="total-value">${this._formatEnergy(this.gridExport)}</span>
+        <span class="total-label">Exported</span>
+      </div>
+    `;
+  }
+
+  private _renderCombinedGridCard() {
+    return html`
+      <div class="total-card">
+        <ha-icon class="total-icon grid" icon="mdi:transmission-tower"></ha-icon>
+        <div class="combined-values">
+          <div class="combined-row import-row">
+            <span class="arrow">↓</span>
+            <span>${this._formatEnergyCompact(this.gridImport)}</span>
+          </div>
+          <div class="combined-row export-row">
+            <span class="arrow">↑</span>
+            <span>${this._formatEnergyCompact(this.gridExport)}</span>
+          </div>
+        </div>
+        <span class="total-label">Grid</span>
+      </div>
+    `;
+  }
+
+  private _renderBatteryCard() {
+    return html`
+      <div class="total-card">
+        <ha-icon class="total-icon battery" icon="mdi:battery-charging"></ha-icon>
+        <div class="combined-values">
+          <div class="combined-row charge-row">
+            <span class="arrow">↑</span>
+            <span>${this._formatEnergyCompact(this.batteryCharge)}</span>
+          </div>
+          <div class="combined-row discharge-row">
+            <span class="arrow">↓</span>
+            <span>${this._formatEnergyCompact(this.batteryDischarge)}</span>
+          </div>
+        </div>
+        <span class="total-label">Battery</span>
       </div>
     `;
   }
@@ -188,6 +279,11 @@ export class EnergyDailyTotals extends LitElement {
   private _formatEnergy(value: number | null): string {
     if (value === null || value === undefined) return "—";
     return `${value.toFixed(1)} kWh`;
+  }
+
+  private _formatEnergyCompact(value: number | null): string {
+    if (value === null || value === undefined) return "—";
+    return `${value.toFixed(1)}`;
   }
 
   private _formatPercent(value: number | null): string {

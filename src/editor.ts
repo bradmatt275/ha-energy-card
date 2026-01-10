@@ -424,6 +424,27 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
               @value-changed=${(e: CustomEvent) => this._updateBattery("current", e.detail.value || "")}
             ></ha-selector>
           </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Daily Charge</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.battery?.daily_charge || ""}
+                @value-changed=${(e: CustomEvent) => this._updateBattery("daily_charge", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+            <div class="form-group">
+              <label>Daily Discharge</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.battery?.daily_discharge || ""}
+                @value-changed=${(e: CustomEvent) => this._updateBattery("daily_discharge", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+          </div>
+          <span class="help-text">Daily totals enable the Battery card in Today section and improve consumption calculation</span>
         ` : nothing}
       </div>
     `;
@@ -459,7 +480,7 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
             <ha-icon icon="mdi:plus"></ha-icon>
             Add Entity
           </mwc-button>
-          <span class="help-text">Leave empty to auto-calculate: Solar Production - Grid Export + Grid Import</span>
+          <span class="help-text">Leave empty to auto-calculate: Solar - Export + Import - Battery Charge</span>
         </div>
       </div>
     `;
@@ -585,6 +606,14 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
               @change=${(e: Event) => this._updateDailyTotals("show_self_sufficiency", (e.target as HTMLInputElement).checked)}
             ></ha-switch>
           </div>
+          <div class="switch-row">
+            <span class="switch-label">Compact Layout</span>
+            <ha-switch
+              .checked=${this._config.daily_totals?.compact_layout ?? false}
+              @change=${(e: Event) => this._updateDailyTotals("compact_layout", (e.target as HTMLInputElement).checked)}
+            ></ha-switch>
+          </div>
+          <span class="help-text">Combines Grid import/export and Battery charge/discharge into single cards</span>
         ` : nothing}
       </div>
     `;
