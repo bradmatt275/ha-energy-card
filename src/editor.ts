@@ -459,7 +459,7 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
             <ha-icon icon="mdi:plus"></ha-icon>
             Add Entity
           </mwc-button>
-          <span class="help-text">Multiple entities will be summed.</span>
+          <span class="help-text">Leave empty to auto-calculate: Solar Production - Grid Export + Grid Import</span>
         </div>
       </div>
     `;
