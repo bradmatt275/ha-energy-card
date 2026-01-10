@@ -76,6 +76,8 @@ battery:
   soc: sensor.battery_soc
   voltage: sensor.battery_voltage
   current: sensor.battery_current
+  daily_charge: sensor.battery_daily_charge      # Optional
+  daily_discharge: sensor.battery_daily_discharge # Optional
 
 circuits:
   show: true

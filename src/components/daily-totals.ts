@@ -320,7 +320,7 @@ export class EnergyDailyTotals extends LitElement {
 
   private _formatEnergyCompact(value: number | null): string {
     if (value === null || value === undefined) return "—";
-    return `${value.toFixed(1)}`;
+    return `${value.toFixed(1)} kWh`;
   }
 
   private _formatPercent(value: number | null): string {

@@ -133,14 +133,17 @@ battery:
   soc: sensor.battery_soc
   voltage: sensor.battery_voltage
   current: sensor.battery_current
+  daily_charge: sensor.battery_daily_charge
+  daily_discharge: sensor.battery_daily_discharge
 
 home:
   power: sensor.home_consumption
-  daily_consumption: sensor.home_daily_consumption
+  daily_consumption: sensor.home_daily_consumption  # Optional - auto-calculated if not set
 
 daily_totals:
   show: true
   show_self_sufficiency: true
+  compact_layout: false
 
 circuits:
   show: true
@@ -218,13 +221,15 @@ ev_charger:
 | `soc` | string | - | Entity for state of charge (%) |
 | `voltage` | string | - | Entity for battery voltage |
 | `current` | string | - | Entity for battery current |
+| `daily_charge` | string | - | Entity for daily energy charged (kWh) |
+| `daily_discharge` | string | - | Entity for daily energy discharged (kWh) |
 
 ### Home
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `power` | string | - | Entity for home consumption (auto-calculated if not set) |
-| `daily_consumption` | string | - | Entity for daily consumption (kWh) |
+| `daily_consumption` | string/array | - | Entity(s) for daily consumption (kWh). Auto-calculated if not set: Solar - Export + Import - Battery Charge |
 
 ### Daily Totals
 
@@ -232,6 +237,7 @@ ev_charger:
 |--------|------|---------|-------------|
 | `show` | boolean | `true` | Show daily totals section |
 | `show_self_sufficiency` | boolean | `true` | Show self-sufficiency percentage |
+| `compact_layout` | boolean | `false` | Combine Grid import/export and Battery charge/discharge into single cards |
 
 ### Circuits
 
