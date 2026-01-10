@@ -206,10 +206,13 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
     
     // Calculate daily consumption from array or single entity
     let dailyConsumption: number | null = null;
-    if (this._config.home?.daily_consumption) {
-      const consumptionConfig = this._config.home.daily_consumption;
-      const entities = Array.isArray(consumptionConfig) ? consumptionConfig : [consumptionConfig];
-      const values = entities.map(entity => this._getNumericState(entity)).filter(v => v !== null) as number[];
+    const consumptionConfig = this._config.home?.daily_consumption;
+    const consumptionEntities = Array.isArray(consumptionConfig) 
+      ? consumptionConfig.filter(e => e) // Filter out empty strings
+      : consumptionConfig ? [consumptionConfig] : [];
+    
+    if (consumptionEntities.length > 0) {
+      const values = consumptionEntities.map(entity => this._getNumericState(entity)).filter(v => v !== null) as number[];
       if (values.length > 0) {
         dailyConsumption = values.reduce((sum, val) => sum + val, 0);
       }
