@@ -19,6 +19,7 @@ export class EnergyBatterySummary extends LitElement {
   @property({ type: String }) currentEntity: string | null = null;
   @property({ type: Number }) bmsOnline: number | null = null;
   @property({ type: Number }) bmsTotal: number | null = null;
+  @property({ type: String }) bmsCombinedEntity: string | null = null;
 
   static styles = css`
     :host {
@@ -287,7 +288,10 @@ export class EnergyBatterySummary extends LitElement {
           </div>
 
           ${this.bmsTotal !== null && this.bmsOnline !== null ? html`
-            <div class="stat bms ${this.bmsOnline < this.bmsTotal ? 'warning' : ''}">
+            <div
+              class="stat bms ${this.bmsOnline < this.bmsTotal ? 'warning' : ''} ${this.bmsCombinedEntity ? 'clickable' : ''}"
+              @click=${() => this._handleClick(this.bmsCombinedEntity)}
+            >
               <ha-icon
                 class="bms-icon"
                 icon="${this.bmsOnline < this.bmsTotal ? 'mdi:battery-alert-variant-outline' : 'mdi:battery-check'}"

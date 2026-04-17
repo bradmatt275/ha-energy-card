@@ -523,6 +523,7 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
                   .currentEntity=${this._config.battery?.current || null}
                   .bmsOnline=${this._state.battery?.bmsOnline ?? null}
                   .bmsTotal=${this._state.battery?.bmsTotal ?? null}
+                  .bmsCombinedEntity=${this._config.battery?.bms?.bms_combined || null}
                 ></energy-battery-summary>
               `
             : ""}
