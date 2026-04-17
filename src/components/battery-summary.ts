@@ -182,7 +182,7 @@ export class EnergyBatterySummary extends LitElement {
       font-weight: 600;
     }
 
-    @media (max-width: 800px) {
+    @media (max-width: 1100px) {
       .battery-bar {
         flex-direction: column;
         align-items: stretch;
