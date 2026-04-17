@@ -37,9 +37,8 @@ export class EnergyBatterySummary extends LitElement {
 
     .battery-bar {
       display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 12px;
+      align-items: center;
+      gap: 16px;
       padding: 12px 16px;
       background: var(--card-background-color, var(--ha-card-background));
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
@@ -47,7 +46,8 @@ export class EnergyBatterySummary extends LitElement {
     }
 
     .soc-container {
-      width: 100%;
+      flex: 1;
+      min-width: 100px;
     }
 
     .soc-container.clickable {
@@ -98,7 +98,6 @@ export class EnergyBatterySummary extends LitElement {
 
     .stats-container {
       display: flex;
-      justify-content: space-around;
       gap: 8px;
     }
 
@@ -106,9 +105,14 @@ export class EnergyBatterySummary extends LitElement {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 0 8px;
+      padding: 0 12px;
+      border-left: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       border-radius: 8px;
       transition: background 0.2s ease;
+    }
+
+    .stat:first-child {
+      border-left: none;
     }
 
     .stat.clickable {
@@ -178,7 +182,42 @@ export class EnergyBatterySummary extends LitElement {
       font-weight: 600;
     }
 
+    @media (max-width: 800px) {
+      .battery-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
 
+      .soc-container {
+        max-width: none;
+      }
+
+      .stats-container {
+        justify-content: space-around;
+      }
+
+      .stat {
+        border-left: none;
+        padding: 0 8px;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .stats-container {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 4px;
+      }
+
+      .stat {
+        padding: 4px 8px;
+      }
+
+      .stat-value {
+        font-size: 14px;
+      }
+    }
   `;
 
   protected render() {
