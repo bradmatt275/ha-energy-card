@@ -83,6 +83,12 @@ export interface BatteryConfig {
   state?: string;
   daily_charge?: string;
   daily_discharge?: string;
+  bms?: BmsConfig;
+}
+
+export interface BmsConfig {
+  bms_combined?: string;
+  bms_count?: string;
 }
 
 export interface HomeConfig {
@@ -189,6 +195,8 @@ export interface BatteryState {
   current: number | null;
   charging: boolean;
   discharging: boolean;
+  bmsOnline: number | null;
+  bmsTotal: number | null;
 }
 
 export interface HomeState {

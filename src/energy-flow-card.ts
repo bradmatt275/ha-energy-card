@@ -251,6 +251,12 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
         current: this._getNumericState(this._config.battery?.current),
         charging: batteryPower > 0,
         discharging: batteryPower < 0,
+        bmsOnline: this._config.battery?.bms?.bms_combined && this._config.battery?.bms?.bms_count
+          ? this._getNumericState(this._config.battery.bms.bms_combined)
+          : null,
+        bmsTotal: this._config.battery?.bms?.bms_combined && this._config.battery?.bms?.bms_count
+          ? this._getNumericState(this._config.battery.bms.bms_count)
+          : null,
       },
       home: {
         power: homePower,
@@ -515,6 +521,8 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
                   .powerEntity=${this._config.battery?.power || null}
                   .voltageEntity=${this._config.battery?.voltage || null}
                   .currentEntity=${this._config.battery?.current || null}
+                  .bmsOnline=${this._state.battery?.bmsOnline ?? null}
+                  .bmsTotal=${this._state.battery?.bmsTotal ?? null}
                 ></energy-battery-summary>
               `
             : ""}

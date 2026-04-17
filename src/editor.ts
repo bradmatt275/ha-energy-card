@@ -445,6 +445,27 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
             </div>
           </div>
           <span class="help-text">Daily totals enable the Battery card in Today section and improve consumption calculation</span>
+          <div class="form-row">
+            <div class="form-group">
+              <label>BMS Combined (YAMBms)</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.battery?.bms?.bms_combined || ""}
+                @value-changed=${(e: CustomEvent) => this._updateBatteryBms("bms_combined", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+            <div class="form-group">
+              <label>BMS Count (YAMBms)</label>
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ entity: { domain: ["sensor"] } }}
+                .value=${this._config.battery?.bms?.bms_count || ""}
+                @value-changed=${(e: CustomEvent) => this._updateBatteryBms("bms_count", e.detail.value || "")}
+              ></ha-selector>
+            </div>
+          </div>
+          <span class="help-text">Optional: Shows a warning when BMS units drop offline</span>
         ` : nothing}
       </div>
     `;
@@ -981,6 +1002,17 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
     this._config = {
       ...this._config,
       battery: { ...this._config.battery, [key]: value },
+    };
+    this._fireConfigChanged();
+  }
+
+  private _updateBatteryBms(key: string, value: unknown): void {
+    this._config = {
+      ...this._config,
+      battery: {
+        ...this._config.battery,
+        bms: { ...this._config.battery?.bms, [key]: value },
+      },
     };
     this._fireConfigChanged();
   }

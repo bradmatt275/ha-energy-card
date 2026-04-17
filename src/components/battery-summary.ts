@@ -17,6 +17,8 @@ export class EnergyBatterySummary extends LitElement {
   @property({ type: String }) powerEntity: string | null = null;
   @property({ type: String }) voltageEntity: string | null = null;
   @property({ type: String }) currentEntity: string | null = null;
+  @property({ type: Number }) bmsOnline: number | null = null;
+  @property({ type: Number }) bmsTotal: number | null = null;
 
   static styles = css`
     :host {
@@ -147,6 +149,39 @@ export class EnergyBatterySummary extends LitElement {
       color: #8b5cf6;
     }
 
+    .stat.bms {
+      flex-direction: row;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border-left: none;
+    }
+
+    .stat.bms .bms-icon {
+      --mdc-icon-size: 16px;
+      color: var(--secondary-text-color);
+    }
+
+    .stat.bms .stat-value {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--secondary-text-color);
+    }
+
+    .stat.bms.warning {
+      background: var(--energy-warning-container, rgba(255, 152, 0, 0.15));
+      border: 1px solid var(--energy-warning, #ff9800);
+    }
+
+    .stat.bms.warning .bms-icon {
+      color: var(--energy-warning, #ff9800);
+    }
+
+    .stat.bms.warning .stat-value {
+      color: var(--energy-warning, #ff9800);
+      font-weight: 600;
+    }
+
     @media (max-width: 600px) {
       .battery-bar {
         flex-direction: column;
@@ -234,6 +269,16 @@ export class EnergyBatterySummary extends LitElement {
               >${this._getPowerLabel()}</span
             >
           </div>
+
+          ${this.bmsTotal !== null && this.bmsOnline !== null ? html`
+            <div class="stat bms ${this.bmsOnline < this.bmsTotal ? 'warning' : ''}">
+              <ha-icon
+                class="bms-icon"
+                icon="${this.bmsOnline < this.bmsTotal ? 'mdi:battery-alert-variant-outline' : 'mdi:battery-check'}"
+              ></ha-icon>
+              <span class="stat-value">BMS: ${this.bmsOnline}/${this.bmsTotal}</span>
+            </div>
+          ` : ""}
         </div>
       </div>
     `;
