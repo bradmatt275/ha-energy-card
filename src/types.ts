@@ -89,6 +89,7 @@ export interface BatteryConfig {
 export interface BmsConfig {
   bms_combined?: string;
   bms_count?: string;
+  bms_count_fixed?: number;
 }
 
 export interface HomeConfig {

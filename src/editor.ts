@@ -464,6 +464,14 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
                 @value-changed=${(e: CustomEvent) => this._updateBatteryBms("bms_count", e.detail.value || "")}
               ></ha-selector>
             </div>
+            <div class="form-group">
+              <label>BMS Total (fixed number)</label>
+              <ha-selector
+                .selector=${{ number: { min: 1, max: 100, step: 1, mode: "box" } }}
+                .value=${this._config.battery?.bms?.bms_count_fixed ?? null}
+                @value-changed=${(e: CustomEvent) => this._updateBatteryBms("bms_count_fixed", e.detail.value != null && e.detail.value !== "" ? Number(e.detail.value) : undefined)}
+              ></ha-selector>
+            </div>
           </div>
           <span class="help-text">Optional: Shows a warning when BMS units drop offline</span>
         ` : nothing}
