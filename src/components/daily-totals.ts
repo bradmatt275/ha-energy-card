@@ -19,7 +19,7 @@ export class EnergyDailyTotals extends LitElement {
   
   // Entity IDs for click-to-show-details
   @property({ type: String }) productionEntity: string | null = null;
-  @property({ type: String }) consumptionEntity: string | null = null;
+  @property({ attribute: false }) consumptionEntity: string | string[] | null = null;
   @property({ type: String }) importEntity: string | null = null;
   @property({ type: String }) exportEntity: string | null = null;
   @property({ type: String }) chargeEntity: string | null = null;
@@ -162,6 +162,16 @@ export class EnergyDailyTotals extends LitElement {
     }
   `;
 
+  // Helper to check if an entity ID or array has a valid string
+  private _isClickable(entityId: string | string[] | null): boolean {
+    if (!entityId) return false;
+    if (Array.isArray(entityId)) {
+      const validEntities = entityId.filter(id => id && typeof id === "string");
+      return validEntities.length === 1;
+    }
+    return typeof entityId === "string" && entityId !== "";
+  }
+
   // Check if battery daily entities are configured
   private get _hasBatteryDaily(): boolean {
     return !!(this.chargeEntity || this.dischargeEntity);
@@ -172,7 +182,7 @@ export class EnergyDailyTotals extends LitElement {
       <div class="section-title">Today</div>
       <div class="totals-grid">
         <div 
-          class="total-card ${this.productionEntity ? 'clickable' : ''}"
+          class="total-card ${this._isClickable(this.productionEntity) ? 'clickable' : ''}"
           @click=${() => this._handleClick(this.productionEntity)}
         >
           <ha-icon class="total-icon solar" icon="mdi:solar-power"></ha-icon>
@@ -181,7 +191,7 @@ export class EnergyDailyTotals extends LitElement {
         </div>
 
         <div 
-          class="total-card ${this.consumptionEntity ? 'clickable' : ''}"
+          class="total-card ${this._isClickable(this.consumptionEntity) ? 'clickable' : ''}"
           @click=${() => this._handleClick(this.consumptionEntity)}
         >
           <ha-icon
@@ -214,7 +224,7 @@ export class EnergyDailyTotals extends LitElement {
   private _renderSeparateGridCards() {
     return html`
       <div 
-        class="total-card ${this.importEntity ? 'clickable' : ''}"
+        class="total-card ${this._isClickable(this.importEntity) ? 'clickable' : ''}"
         @click=${() => this._handleClick(this.importEntity)}
       >
         <ha-icon
@@ -226,7 +236,7 @@ export class EnergyDailyTotals extends LitElement {
       </div>
 
       <div 
-        class="total-card ${this.exportEntity ? 'clickable' : ''}"
+        class="total-card ${this._isClickable(this.exportEntity) ? 'clickable' : ''}"
         @click=${() => this._handleClick(this.exportEntity)}
       >
         <ha-icon
@@ -262,7 +272,7 @@ export class EnergyDailyTotals extends LitElement {
     return html`
       ${this.chargeEntity ? html`
         <div 
-          class="total-card clickable"
+          class="total-card ${this._isClickable(this.chargeEntity) ? 'clickable' : ''}"
           @click=${() => this._handleClick(this.chargeEntity)}
         >
           <ha-icon
@@ -276,7 +286,7 @@ export class EnergyDailyTotals extends LitElement {
 
       ${this.dischargeEntity ? html`
         <div 
-          class="total-card clickable"
+          class="total-card ${this._isClickable(this.dischargeEntity) ? 'clickable' : ''}"
           @click=${() => this._handleClick(this.dischargeEntity)}
         >
           <ha-icon
@@ -309,7 +319,7 @@ export class EnergyDailyTotals extends LitElement {
     `;
   }
 
-  private _handleClick(entityId: string | null): void {
+  private _handleClick(entityId: string | string[] | null): void {
     fireMoreInfo(this, entityId);
   }
 

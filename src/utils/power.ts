@@ -75,13 +75,25 @@ export function sumPositivePowers(values: (number | null | undefined)[]): number
 /**
  * Fire a Home Assistant more-info dialog event for an entity
  */
-export function fireMoreInfo(element: HTMLElement, entityId: string | null | undefined): void {
+export function fireMoreInfo(element: HTMLElement, entityId: string | string[] | null | undefined): void {
   if (!entityId) return;
   
+  let actualEntityId: string | null = null;
+  if (Array.isArray(entityId)) {
+    const validEntities = entityId.filter(id => id && typeof id === "string");
+    if (validEntities.length === 1) {
+      actualEntityId = validEntities[0];
+    }
+  } else if (typeof entityId === "string") {
+    actualEntityId = entityId;
+  }
+
+  if (!actualEntityId) return;
+
   const event = new CustomEvent("hass-more-info", {
     bubbles: true,
     composed: true,
-    detail: { entityId },
+    detail: { entityId: actualEntityId },
   });
   element.dispatchEvent(event);
 }

@@ -33,7 +33,7 @@ export class EnergyFlowDiagram extends LitElement {
   @property({ type: String }) solarEntity: string | null = null;
   @property({ type: String }) gridEntity: string | null = null;
   @property({ type: String }) batteryEntity: string | null = null;
-  @property({ type: String }) homeEntity: string | null = null;
+  @property({ attribute: false }) homeEntity: string | string[] | null = null;
 
   static styles = css`
     :host {
@@ -390,6 +390,16 @@ export class EnergyFlowDiagram extends LitElement {
     }
   `;
 
+  // Helper to check if an entity ID or array has a valid string
+  private _isClickable(entityId: string | string[] | null): boolean {
+    if (!entityId) return false;
+    if (Array.isArray(entityId)) {
+      const validEntities = entityId.filter(id => id && typeof id === "string");
+      return validEntities.length === 1;
+    }
+    return typeof entityId === "string" && entityId !== "";
+  }
+
   protected render() {
     // Calculate flow values
     const solarToHome = this.flows?.solarToHome || 0;
@@ -419,7 +429,7 @@ export class EnergyFlowDiagram extends LitElement {
             ? html`
                 <div class="solar-area">
                   <div 
-                    class="node node-solar ${this.solarEntity ? 'clickable' : ''}"
+                    class="node node-solar ${this._isClickable(this.solarEntity) ? 'clickable' : ''}"
                     @click=${() => this._handleNodeClick(this.solarEntity)}
                   >
                     <ha-icon class="node-icon" icon="mdi:solar-power"></ha-icon>
@@ -444,7 +454,7 @@ export class EnergyFlowDiagram extends LitElement {
           <!-- Grid Area (left) with flow line -->
           <div class="grid-area">
             <div 
-              class="node node-grid ${this.gridEntity ? 'clickable' : ''}"
+              class="node node-grid ${this._isClickable(this.gridEntity) ? 'clickable' : ''}"
               @click=${() => this._handleNodeClick(this.gridEntity)}
             >
               <ha-icon class="node-icon" icon="mdi:transmission-tower"></ha-icon>
@@ -461,7 +471,7 @@ export class EnergyFlowDiagram extends LitElement {
           <!-- Home Area (center) -->
           <div class="home-area">
             <div 
-              class="node node-home ${this.homeEntity ? 'clickable' : ''}"
+              class="node node-home ${this._isClickable(this.homeEntity) ? 'clickable' : ''}"
               @click=${() => this._handleNodeClick(this.homeEntity)}
             >
               <ha-icon class="node-icon" icon="mdi:home"></ha-icon>
@@ -477,7 +487,7 @@ export class EnergyFlowDiagram extends LitElement {
                   <!-- Home to Battery flow line -->
                   <div class="horizontal-flow battery ${batteryChargeActive ? "active" : batteryDischargeActive ? "active reverse" : ""} ${this._getSpeedClass(batteryChargeActive ? homeToBattery : batteryToHome)}"></div>
                   <div 
-                    class="node node-battery ${this.batteryEntity ? 'clickable' : ''}"
+                    class="node node-battery ${this._isClickable(this.batteryEntity) ? 'clickable' : ''}"
                     @click=${() => this._handleNodeClick(this.batteryEntity)}
                   >
                     <ha-icon class="node-icon" icon="${this._getBatteryIcon()}"></ha-icon>
@@ -503,7 +513,7 @@ export class EnergyFlowDiagram extends LitElement {
     return `speed-${getFlowSpeed(power)}`;
   }
 
-  private _handleNodeClick(entityId: string | null): void {
+  private _handleNodeClick(entityId: string | string[] | null): void {
     fireMoreInfo(this, entityId);
   }
 
