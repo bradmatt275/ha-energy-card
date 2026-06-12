@@ -238,13 +238,13 @@ export class EnergyFlowDiagram extends LitElement {
 
     /* Speed variations for div-based lines */
     .speed-fast {
-      --flow-duration: 0.8s;
-    }
-    .speed-medium {
       --flow-duration: 1.5s;
     }
-    .speed-slow {
+    .speed-medium {
       --flow-duration: 2.5s;
+    }
+    .speed-slow {
+      --flow-duration: 4.0s;
     }
 
     /* Node styling with Glassmorphism */
