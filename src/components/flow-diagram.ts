@@ -114,67 +114,13 @@ export class EnergyFlowDiagram extends LitElement {
       justify-content: center;
     }
 
-    .flow-line-svg {
-      overflow: visible;
-    }
-
-    /* Flow lines */
-    .flow-line {
-      fill: none;
-      stroke-width: 3;
-      stroke-linecap: round;
-    }
-
-    .flow-line.active {
-      stroke-dasharray: 8 4;
-      animation: flowAnimation var(--flow-duration, 1s) linear infinite;
-    }
-
-    .flow-line.reverse {
-      animation-direction: reverse;
-    }
-
-    .flow-line.inactive {
-      opacity: 0.2;
-      stroke-dasharray: none;
-      animation: none;
-    }
-
-    .flow-line.solar {
-      stroke: var(--energy-solar, #f59e0b);
-    }
-    .flow-line.grid {
-      stroke: var(--energy-grid, #3b82f6);
-    }
-    .flow-line.battery {
-      stroke: var(--energy-battery, #10b981);
-    }
-
-    /* Speed classes */
-    .flow-line.speed-fast {
-      --flow-duration: 0.3s;
-    }
-    .flow-line.speed-medium {
-      --flow-duration: 0.6s;
-    }
-    .flow-line.speed-slow {
-      --flow-duration: 1s;
-    }
-
-    @keyframes flowAnimation {
-      from {
-        stroke-dashoffset: 12;
-      }
-      to {
-        stroke-dashoffset: 0;
-      }
-    }
-
     /* Vertical flow line (solar to home) */
     .solar-flow-line {
-      width: 3px;
+      width: 4px;
       height: 80px;
       position: relative;
+      border-radius: 4px;
+      overflow: hidden;
     }
 
     .solar-flow-line::before {
@@ -185,37 +131,44 @@ export class EnergyFlowDiagram extends LitElement {
       width: 100%;
       height: 100%;
       background: var(--energy-solar, #f59e0b);
-      opacity: 0.2;
+      opacity: 0.15;
     }
 
-    .solar-flow-line.active::before {
-      opacity: 1;
+    .solar-flow-line.active {
+      filter: drop-shadow(0 0 6px var(--energy-solar, #f59e0b));
+    }
+
+    .solar-flow-line.active::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       background: linear-gradient(
         to bottom,
-        var(--energy-solar, #f59e0b) 0%,
-        var(--energy-solar, #f59e0b) 60%,
-        transparent 60%,
+        transparent 0%,
+        var(--energy-solar, #f59e0b) 50%,
         transparent 100%
       );
-      background-size: 100% 12px;
+      background-size: 100% 200%;
       animation: verticalFlow var(--flow-duration, 1s) linear infinite;
+      opacity: 0.9;
     }
 
     @keyframes verticalFlow {
-      from {
-        background-position: 0 -12px;
-      }
-      to {
-        background-position: 0 0;
-      }
+      from { background-position: 0 -200%; }
+      to { background-position: 0 200%; }
     }
 
     /* Horizontal flow line - dynamic width */
     .horizontal-flow {
       flex: 1;
       min-width: 20px;
-      height: 3px;
+      height: 4px;
       position: relative;
+      border-radius: 4px;
+      overflow: hidden;
     }
 
     .horizontal-flow::before {
@@ -225,79 +178,91 @@ export class EnergyFlowDiagram extends LitElement {
       left: 0;
       width: 100%;
       height: 100%;
-      opacity: 0.2;
+      opacity: 0.15;
     }
 
     .horizontal-flow.grid::before {
       background: var(--energy-grid, #3b82f6);
     }
-
     .horizontal-flow.battery::before {
       background: var(--energy-battery, #10b981);
     }
 
-    .horizontal-flow.active::before {
-      opacity: 1;
-      background-size: 12px 100%;
+    .horizontal-flow.active.grid {
+      filter: drop-shadow(0 0 6px var(--energy-grid, #3b82f6));
+    }
+    .horizontal-flow.active.battery {
+      filter: drop-shadow(0 0 6px var(--energy-battery, #10b981));
+    }
+
+    .horizontal-flow.active::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-size: 200% 100%;
       animation: horizontalFlow var(--flow-duration, 1s) linear infinite;
+      opacity: 0.9;
     }
 
-    .horizontal-flow.active.grid::before {
+    .horizontal-flow.active.grid::after {
       background: linear-gradient(
         to right,
-        var(--energy-grid, #3b82f6) 0%,
-        var(--energy-grid, #3b82f6) 60%,
-        transparent 60%,
+        transparent 0%,
+        var(--energy-grid, #3b82f6) 50%,
         transparent 100%
       );
-      background-size: 12px 100%;
+      background-size: 200% 100%;
     }
 
-    .horizontal-flow.active.battery::before {
+    .horizontal-flow.active.battery::after {
       background: linear-gradient(
         to right,
-        var(--energy-battery, #10b981) 0%,
-        var(--energy-battery, #10b981) 60%,
-        transparent 60%,
+        transparent 0%,
+        var(--energy-battery, #10b981) 50%,
         transparent 100%
       );
-      background-size: 12px 100%;
+      background-size: 200% 100%;
     }
 
-    .horizontal-flow.reverse::before {
+    .horizontal-flow.reverse::after {
       animation-direction: reverse;
     }
 
     @keyframes horizontalFlow {
-      from {
-        background-position: -12px 0;
-      }
-      to {
-        background-position: 0 0;
-      }
+      from { background-position: -200% 0; }
+      to { background-position: 200% 0; }
     }
 
     /* Speed variations for div-based lines */
     .speed-fast {
-      --flow-duration: 0.3s;
+      --flow-duration: 0.4s;
     }
     .speed-medium {
-      --flow-duration: 0.6s;
+      --flow-duration: 0.8s;
     }
     .speed-slow {
-      --flow-duration: 1s;
+      --flow-duration: 1.5s;
     }
 
-    /* Node styling */
+    /* Node styling with Glassmorphism */
     .node {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 12px 16px;
-      border-radius: 16px;
-      min-width: 100px;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      padding: 14px 18px;
+      border-radius: 20px;
+      min-width: 110px;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      position: relative;
+      z-index: 2;
     }
 
     .node.clickable {
@@ -305,67 +270,84 @@ export class EnergyFlowDiagram extends LitElement {
     }
 
     .node:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transform: translateY(-4px) scale(1.03);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+    }
+    
+    .node.active {
+      animation: pulseNode 3s infinite alternate ease-in-out;
+    }
+
+    @keyframes pulseNode {
+      0% { box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 0 0px var(--node-color); }
+      100% { box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.2), 0 0 20px var(--node-color); }
     }
 
     .node-solar {
-      background: var(--energy-solar-container, rgba(245, 158, 11, 0.15));
+      background: var(--energy-solar-container, rgba(245, 158, 11, 0.1));
       color: var(--energy-solar, #f59e0b);
+      --node-color: rgba(245, 158, 11, 0.3);
     }
 
     .node-grid {
-      background: var(--energy-grid-container, rgba(59, 130, 246, 0.15));
+      background: var(--energy-grid-container, rgba(59, 130, 246, 0.1));
       color: var(--energy-grid, #3b82f6);
+      --node-color: rgba(59, 130, 246, 0.3);
     }
 
     .node-home {
-      background: var(--energy-home-container, rgba(139, 92, 246, 0.15));
+      background: var(--energy-home-container, rgba(139, 92, 246, 0.1));
       color: var(--energy-home, #8b5cf6);
+      --node-color: rgba(139, 92, 246, 0.3);
     }
 
     .node-battery {
-      background: var(--energy-battery-container, rgba(16, 185, 129, 0.15));
+      background: var(--energy-battery-container, rgba(16, 185, 129, 0.1));
       color: var(--energy-battery, #10b981);
+      --node-color: rgba(16, 185, 129, 0.3);
     }
 
     .node-icon {
-      margin-bottom: 4px;
-      --mdc-icon-size: 28px;
+      margin-bottom: 6px;
+      --mdc-icon-size: 32px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
     }
 
     .node-label {
-      font-size: 12px;
-      font-weight: 500;
+      font-size: 11px;
+      font-weight: 600;
       text-transform: uppercase;
-      opacity: 0.8;
-      letter-spacing: 0.5px;
+      opacity: 0.85;
+      letter-spacing: 0.8px;
     }
 
     .node-power {
-      font-size: 20px;
-      font-weight: 600;
+      font-size: 22px;
+      font-weight: 700;
       margin-top: 2px;
+      letter-spacing: -0.5px;
     }
 
     .node-status {
       font-size: 11px;
-      opacity: 0.7;
+      opacity: 0.75;
       text-transform: lowercase;
+      font-weight: 500;
     }
 
     .node-arrays {
       display: flex;
       gap: 8px;
       font-size: 11px;
-      margin-top: 4px;
-      opacity: 0.8;
+      margin-top: 6px;
+      opacity: 0.9;
     }
 
     .node-arrays span {
-      background: rgba(0, 0, 0, 0.1);
-      padding: 2px 6px;
-      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.15);
+      padding: 3px 6px;
+      border-radius: 6px;
+      font-weight: 500;
     }
 
     /* Responsive */
@@ -376,11 +358,11 @@ export class EnergyFlowDiagram extends LitElement {
       }
 
       .node-power {
-        font-size: 16px;
+        font-size: 18px;
       }
 
       .node-icon {
-        --mdc-icon-size: 24px;
+        --mdc-icon-size: 26px;
       }
 
       .node-arrays {
@@ -429,7 +411,7 @@ export class EnergyFlowDiagram extends LitElement {
             ? html`
                 <div class="solar-area">
                   <div 
-                    class="node node-solar ${this._isClickable(this.solarEntity) ? 'clickable' : ''}"
+                    class="node node-solar ${this._isClickable(this.solarEntity) ? 'clickable' : ''} ${solarActive ? 'active' : ''}"
                     @click=${() => this._handleNodeClick(this.solarEntity)}
                   >
                     <ha-icon class="node-icon" icon="mdi:solar-power"></ha-icon>
@@ -454,7 +436,7 @@ export class EnergyFlowDiagram extends LitElement {
           <!-- Grid Area (left) with flow line -->
           <div class="grid-area">
             <div 
-              class="node node-grid ${this._isClickable(this.gridEntity) ? 'clickable' : ''}"
+              class="node node-grid ${this._isClickable(this.gridEntity) ? 'clickable' : ''} ${gridImportActive || gridExportActive ? 'active' : ''}"
               @click=${() => this._handleNodeClick(this.gridEntity)}
             >
               <ha-icon class="node-icon" icon="mdi:transmission-tower"></ha-icon>
@@ -471,7 +453,7 @@ export class EnergyFlowDiagram extends LitElement {
           <!-- Home Area (center) -->
           <div class="home-area">
             <div 
-              class="node node-home ${this._isClickable(this.homeEntity) ? 'clickable' : ''}"
+              class="node node-home ${this._isClickable(this.homeEntity) ? 'clickable' : ''} ${isFlowActive(this.home?.power || 0) ? 'active' : ''}"
               @click=${() => this._handleNodeClick(this.homeEntity)}
             >
               <ha-icon class="node-icon" icon="mdi:home"></ha-icon>
@@ -487,7 +469,7 @@ export class EnergyFlowDiagram extends LitElement {
                   <!-- Home to Battery flow line -->
                   <div class="horizontal-flow battery ${batteryChargeActive ? "active" : batteryDischargeActive ? "active reverse" : ""} ${this._getSpeedClass(batteryChargeActive ? homeToBattery : batteryToHome)}"></div>
                   <div 
-                    class="node node-battery ${this._isClickable(this.batteryEntity) ? 'clickable' : ''}"
+                    class="node node-battery ${this._isClickable(this.batteryEntity) ? 'clickable' : ''} ${batteryChargeActive || batteryDischargeActive ? 'active' : ''}"
                     @click=${() => this._handleNodeClick(this.batteryEntity)}
                   >
                     <ha-icon class="node-icon" icon="${this._getBatteryIcon()}"></ha-icon>
