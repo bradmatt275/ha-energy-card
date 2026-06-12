@@ -157,8 +157,8 @@ export class EnergyFlowDiagram extends LitElement {
     }
 
     @keyframes verticalFlow {
-      from { background-position: 0 -200%; }
-      to { background-position: 0 200%; }
+      from { background-position: 0 200%; }
+      to { background-position: 0 -200%; }
     }
 
     /* Horizontal flow line - dynamic width */
@@ -232,19 +232,19 @@ export class EnergyFlowDiagram extends LitElement {
     }
 
     @keyframes horizontalFlow {
-      from { background-position: -200% 0; }
-      to { background-position: 200% 0; }
+      from { background-position: 200% 0; }
+      to { background-position: -200% 0; }
     }
 
     /* Speed variations for div-based lines */
     .speed-fast {
-      --flow-duration: 0.4s;
-    }
-    .speed-medium {
       --flow-duration: 0.8s;
     }
-    .speed-slow {
+    .speed-medium {
       --flow-duration: 1.5s;
+    }
+    .speed-slow {
+      --flow-duration: 2.5s;
     }
 
     /* Node styling with Glassmorphism */
