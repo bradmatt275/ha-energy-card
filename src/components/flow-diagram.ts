@@ -52,7 +52,7 @@ export class EnergyFlowDiagram extends LitElement {
     .flow-grid {
       display: grid;
       grid-template-areas:
-        ". solar ."
+        "solar solar solar"
         "grid-area home-area battery-area";
       grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
       grid-template-rows: auto auto;
@@ -69,7 +69,7 @@ export class EnergyFlowDiagram extends LitElement {
     .flow-grid.no-battery {
       grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
       grid-template-areas:
-        ". solar ."
+        "solar solar solar"
         "grid-area home-area .";
     }
 
