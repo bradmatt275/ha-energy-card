@@ -366,7 +366,9 @@ export class EnergyFlowDiagram extends LitElement {
       }
 
       .node-arrays {
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
         gap: 4px;
       }
     }
