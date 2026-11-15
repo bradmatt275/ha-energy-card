@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+  # Manual run from the Actions tab. On main this makes a normal release;
+  # on any other branch it makes a pre-release (e.g. v1.0.10-beta.42) that
+  # HACS can install with "Show beta versions" enabled.
+  workflow_dispatch:
 
 # Prevent concurrent releases
 concurrency:
@@ -15,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,15 +38,31 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: energy-flow-card-${{ github.ref_name == 'main' && 'main' || github.run_number }}
+          path: dist/energy-flow-card.js
+
+      - name: Determine release type
+        id: type
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+          else
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+            echo "Pre-release build from branch ${GITHUB_REF_NAME}"
+          fi
+
       - name: Get latest version and calculate next
         id: version
         run: |
           # Hardcoded major version - change this manually when needed
           MAJOR=1
-          
-          # Get the latest tag matching our major version
-          LATEST_TAG=$(git tag -l "v${MAJOR}.*" --sort=-v:refname | head -n1)
-          
+
+          # Latest *stable* tag for this major version (ignore -beta.N pre-releases)
+          LATEST_TAG=$(git tag -l "v${MAJOR}.*" --sort=-v:refname | grep -E "^v${MAJOR}\.[0-9]+\.[0-9]+$" | head -n1 || true)
+
           if [ -z "$LATEST_TAG" ]; then
             # No tags yet for this major version, start at x.0.0
             MINOR=0
@@ -52,20 +72,32 @@ jobs:
             VERSION_PART=${LATEST_TAG#v${MAJOR}.}
             MINOR=$(echo $VERSION_PART | cut -d. -f1)
             PATCH=$(echo $VERSION_PART | cut -d. -f2)
-            
+
             # Increment patch version
             PATCH=$((PATCH + 1))
           fi
-          
+
           NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+          if [ "${{ steps.type.outputs.prerelease }}" = "true" ]; then
+            # Unique per run, sorts before the stable release it leads up to
+            NEW_VERSION="${NEW_VERSION}-beta.${GITHUB_RUN_NUMBER}"
+          fi
+
           echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
           echo "New version: ${NEW_VERSION}"
 
       - name: Check if release needed
         id: check
         run: |
-          # Check if current commit already has a tag
-          if git describe --exact-match HEAD 2>/dev/null; then
+          # Pre-releases are always built on request
+          if [ "${{ steps.type.outputs.prerelease }}" = "true" ]; then
+            echo "skip=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Skip if the current commit already has a *stable* tag
+          # (a beta tag on the same commit must not block the real release)
+          if git tag --points-at HEAD | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "Current commit already tagged, skipping release"
           else
@@ -76,16 +108,22 @@ jobs:
         if: steps.check.outputs.skip != 'true'
         id: notes
         run: |
-          # Get previous tag
-          PREV_TAG=$(git tag -l "v*" --sort=-v:refname | head -n1)
-          
+          # Previous stable tag (pre-releases excluded)
+          PREV_TAG=$(git tag -l "v*" --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n1 || true)
+
           if [ -z "$PREV_TAG" ]; then
             NOTES="Initial release of Energy Flow Card for Home Assistant"
           else
             # Generate changelog from commits since last tag
             NOTES=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s" --no-merges | head -20)
           fi
-          
+
+          if [ "${{ steps.type.outputs.prerelease }}" = "true" ]; then
+            NOTES="> ⚠️ Pre-release built from branch \`${GITHUB_REF_NAME}\` (${GITHUB_SHA::7}) for testing.
+
+          ${NOTES}"
+          fi
+
           # Use EOF delimiter to handle multiline output properly
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$NOTES" >> $GITHUB_OUTPUT
@@ -97,23 +135,24 @@ jobs:
         with:
           tag_name: ${{ steps.version.outputs.version }}
           name: ${{ steps.version.outputs.version }}
+          target_commitish: ${{ github.sha }}
           body: |
             ## Changes
             ${{ steps.notes.outputs.notes }}
-            
+
             ## Installation
-            
+
             ### HACS (Recommended)
             1. Add this repository as a custom repository in HACS
             2. Install "Energy Flow Card"
             3. Refresh your browser
-            
+
             ### Manual
             1. Download `energy-flow-card.js` below
             2. Copy to `config/www/energy-flow-card.js`
             3. Add resource in Lovelace: `/local/energy-flow-card.js`
           draft: false
-          prerelease: false
+          prerelease: ${{ steps.type.outputs.prerelease }}
           files: |
             dist/energy-flow-card.js
         env:
