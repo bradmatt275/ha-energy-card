@@ -171,6 +171,14 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
     return (this._isLandscape ? Math.max(main, side) : main + side) + circuits;
   }
 
+  protected firstUpdated(changedProps: PropertyValues): void {
+    super.firstUpdated(changedProps);
+    // Measure once up front so "auto" doesn't render portrait until the
+    // ResizeObserver's first callback arrives.
+    const width = Math.round(this.getBoundingClientRect().width);
+    if (width > 0 && width !== this._width) this._width = width;
+  }
+
   protected updated(changedProps: PropertyValues): void {
     super.updated(changedProps);
     if (changedProps.has("hass") || changedProps.has("_config")) {
@@ -658,6 +666,7 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
         .bmsOnline=${this._state.battery?.bmsOnline ?? null}
         .bmsTotal=${this._state.battery?.bmsTotal ?? null}
         .bmsCombinedEntity=${this._config.battery?.bms?.bms_combined || null}
+        .stacked=${this._isLandscape}
       ></energy-battery-summary>
     `;
   }
