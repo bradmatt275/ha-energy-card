@@ -1,7 +1,18 @@
 # Plan: Landscape Layout & Kiosk Mode
 
-**Status:** Planned — not started (on hold pending kiosk hardware decision)
+**Status:** Implemented 2026-11-15 (fit-to-viewport not done)
 **Created:** 2026-11-15
+
+## As built
+
+- `layout`, `reduced_effects` and `scale` config options with editor controls (a "Layout" section).
+- `font_scale` became **`scale`**, applied as CSS `zoom` on the card. Sub-components use fixed px sizes, so zoom scales everything consistently with no per-component changes.
+- `auto` uses a `ResizeObserver` on the card. It goes landscape when `width / scale >= 1000px` (`LANDSCAPE_MIN_WIDTH`).
+- Landscape: main column (flow + daily totals) 3fr | side column (battery, inverter, UPS/EV stacked) 2fr. Circuits and action buttons span full width.
+- `reduced_effects` keeps the flow-line animation (it shows direction) and removes backdrop blur, drop-shadow glows, node pulses and hover transforms. `prefers-reduced-motion` stops all animation.
+- URL overrides in `src/utils/overrides.ts`: `efc_layout`, `efc_effects`, `efc_scale`, persisted to localStorage, with `reset`.
+- Hardware chosen: MeLE Quieter 4C (N150, 8GB) running Debian 13 with KDE and TouchKio. Full effects should be fine on it.
+- Not done: fit-to-viewport (100vh, no scroll). `scale` covers most of the need.
 
 ## Goal
 
@@ -48,7 +59,7 @@ For low-power devices (Pi 3/4). When enabled:
 - Slow down / simplify flow-line animations (fewer animated elements, longer durations).
 - Also respect `prefers-reduced-motion`.
 
-### 3. Optional: `font_scale`
+### 3. Optional: `font_scale` (built as `scale`)
 
 A single CSS variable multiplier (e.g. `--efc-font-scale`) so text is readable from across a room. Cheap to add alongside the above.
 

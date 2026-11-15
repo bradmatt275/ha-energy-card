@@ -27,6 +27,16 @@ export const DEFAULT_CIRCUITS_CONFIG = {
   items: [],
 };
 
+// Layout
+export const DEFAULT_LAYOUT = "auto" as const;
+// In "auto" layout, the card switches to landscape at or above this width (px)
+export const LANDSCAPE_MIN_WIDTH = 1000;
+export const SCALE_MIN = 0.5;
+export const SCALE_MAX = 3;
+
+// Per-device overrides (URL params persisted to localStorage)
+export const OVERRIDES_STORAGE_KEY = "energy-flow-card:overrides";
+
 // Power thresholds for animation speed
 export const POWER_THRESHOLD_HIGH = 2000; // W
 export const POWER_THRESHOLD_MEDIUM = 500; // W

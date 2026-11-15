@@ -20,6 +20,7 @@ A custom Home Assistant Lovelace card that displays real-time energy flow throug
 - 🚗 **EV Charger Control** - Status display with interactive charge mode selection
 - 👆 **Click-to-Details** - Tap any entity to open its Home Assistant details dialog
 - 📱 **Responsive Design** - Adapts layout for mobile and tablet displays
+- 🖥️ **Landscape & Kiosk Mode** - Wide landscape layout, reduced effects and scaling, set per device via URL parameters
 - 🎨 **Visual Config Editor** - Full GUI configuration without YAML editing
 - 🎯 **Material You Styling** - Modern design that matches Home Assistant themes
 
@@ -90,6 +91,22 @@ circuits:
       icon: "mdi:fridge"
       power: sensor.fridge_power
 ```
+
+## Landscape & Kiosk Mode
+
+```yaml
+layout: auto            # auto | portrait | landscape
+reduced_effects: false  # disable blur/glow/pulse for low-power devices
+scale: 1                # zoom the whole card, e.g. 1.4 for a wall display
+```
+
+Or keep one dashboard and override per device with the URL. The values are remembered on that device:
+
+```
+/lovelace/energy?efc_layout=landscape&efc_effects=reduced&efc_scale=1.4
+```
+
+Use `?efc_layout=reset` to clear. See [Kiosk Mode](docs/README.md#kiosk-mode) for details.
 
 ## Documentation
 

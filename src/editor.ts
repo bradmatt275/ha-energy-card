@@ -163,6 +163,7 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
     return html`
       <div class="card-config">
         ${this._renderGeneralSection()}
+        ${this._renderLayoutSection()}
         ${this._renderAnimationSection()}
         ${this._renderSolarSection()}
         ${this._renderGridSection()}
@@ -196,6 +197,55 @@ export class EnergyFlowCardEditor extends LitElement implements LovelaceCardEdit
             .placeholder=${"Energy Flow"}
             @input=${(e: Event) => this._updateConfig("title", (e.target as HTMLInputElement).value)}
           ></ha-textfield>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderLayoutSection(): TemplateResult {
+    return html`
+      <div class="section">
+        <div class="section-title">
+          <ha-icon icon="mdi:page-layout-sidebar-right"></ha-icon>
+          Layout
+        </div>
+        <div class="form-group">
+          <label>Layout</label>
+          <ha-selector
+            .hass=${this.hass}
+            .selector=${{
+              select: {
+                options: [
+                  { value: "auto", label: "Auto (landscape when wide)" },
+                  { value: "portrait", label: "Portrait" },
+                  { value: "landscape", label: "Landscape" },
+                ],
+                mode: "dropdown",
+              },
+            }}
+            .value=${this._config.layout || "auto"}
+            @value-changed=${(e: CustomEvent) => this._updateConfig("layout", e.detail.value)}
+          ></ha-selector>
+        </div>
+        <div class="switch-row">
+          <span class="switch-label">Reduced effects (low-power devices)</span>
+          <ha-switch
+            .checked=${this._config.reduced_effects ?? false}
+            @change=${(e: Event) => this._updateConfig("reduced_effects", (e.target as HTMLInputElement).checked)}
+          ></ha-switch>
+        </div>
+        <div class="form-group">
+          <label>Scale</label>
+          <ha-selector
+            .hass=${this.hass}
+            .selector=${{ number: { min: 0.5, max: 3, step: 0.05, mode: "slider" } }}
+            .value=${this._config.scale ?? 1}
+            @value-changed=${(e: CustomEvent) => this._updateConfig("scale", e.detail.value)}
+          ></ha-selector>
+        </div>
+        <div class="help-text">
+          Per-device overrides: add <code>?efc_layout=landscape&amp;efc_effects=reduced&amp;efc_scale=1.25</code>
+          to the dashboard URL (remembered on that device; <code>?efc_layout=reset</code> clears).
         </div>
       </div>
     `;
