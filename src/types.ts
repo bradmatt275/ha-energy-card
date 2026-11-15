@@ -22,7 +22,15 @@ export interface EnergyFlowCardConfig extends LovelaceCardConfig {
   inverter?: InverterConfig;
   display?: DisplayConfig;
   action_buttons?: ActionButtonsConfig;
+  /** Card layout. "auto" picks landscape when the card is wide enough. */
+  layout?: CardLayout;
+  /** Disable GPU-heavy effects (blur, glows, pulses) for low-power devices. */
+  reduced_effects?: boolean;
+  /** Zoom multiplier for the whole card, e.g. 1.25 for wall displays. */
+  scale?: number;
 }
+
+export type CardLayout = "auto" | "portrait" | "landscape";
 
 export interface ActionButtonsConfig {
   left?: ActionButtonConfig[];

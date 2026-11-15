@@ -28,6 +28,8 @@ export class EnergyFlowDiagram extends LitElement {
   };
   @property({ type: Boolean }) showSolar = true;
   @property({ type: Boolean }) showBattery = true;
+  /** Drop GPU-heavy effects (blur, glow filters, pulses) for low-power devices. */
+  @property({ type: Boolean, reflect: true, attribute: "reduced-effects" }) reducedEffects = false;
   
   // Entity IDs for click-to-show-details
   @property({ type: String }) solarEntity: string | null = null;
@@ -348,6 +350,44 @@ export class EnergyFlowDiagram extends LitElement {
       padding: 3px 6px;
       border-radius: 6px;
       font-weight: 500;
+    }
+
+    /* Reduced effects: keep the flow animation (it carries direction info) but
+       drop the blur, glow filters and pulses that force expensive repaints. */
+    :host([reduced-effects]) .node {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      transition: none;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+
+    :host([reduced-effects]) .node.active {
+      animation: none;
+      box-shadow: inset 0 0 0 1px var(--node-color);
+    }
+
+    :host([reduced-effects]) .node:hover {
+      transform: none;
+    }
+
+    :host([reduced-effects]) .node-icon,
+    :host([reduced-effects]) .solar-flow-line.active,
+    :host([reduced-effects]) .horizontal-flow.active {
+      filter: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .node,
+      .node.active,
+      .solar-flow-line.active::after,
+      .horizontal-flow.active::after {
+        animation: none;
+        transition: none;
+      }
+
+      .node:hover {
+        transform: none;
+      }
     }
 
     /* Responsive */

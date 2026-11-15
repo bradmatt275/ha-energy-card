@@ -20,6 +20,8 @@ export class EnergyBatterySummary extends LitElement {
   @property({ type: Number }) bmsOnline: number | null = null;
   @property({ type: Number }) bmsTotal: number | null = null;
   @property({ type: String }) bmsCombinedEntity: string | null = null;
+  /** Landscape: SOC on its own prominent row, stats on a row below. */
+  @property({ type: Boolean, reflect: true }) stacked = false;
 
   static styles = css`
     :host {
@@ -100,6 +102,73 @@ export class EnergyBatterySummary extends LitElement {
     .stats-container {
       display: flex;
       gap: 8px;
+    }
+
+    /* Large SOC readout, only shown in stacked mode */
+    .soc-value {
+      display: none;
+    }
+
+    /* Stacked (landscape): SOC row on top, stats row below */
+    :host([stacked]) .battery-bar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 14px;
+      padding: 16px;
+    }
+
+    :host([stacked]) .soc-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    :host([stacked]) .soc-value {
+      display: block;
+      font-size: 34px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.5px;
+      font-variant-numeric: tabular-nums;
+      color: var(--energy-battery, #10b981);
+      min-width: 3.6em;
+    }
+
+    :host([stacked]) .soc-value.low {
+      color: var(--energy-warning, #ff9800);
+    }
+
+    :host([stacked]) .soc-value.critical {
+      color: var(--energy-error, #f44336);
+    }
+
+    :host([stacked]) .soc-bar {
+      flex: 1;
+      height: 28px;
+      border-radius: 14px;
+    }
+
+    :host([stacked]) .soc-fill {
+      border-radius: 14px;
+    }
+
+    :host([stacked]) .soc-text {
+      display: none;
+    }
+
+    :host([stacked]) .stats-container {
+      justify-content: space-between;
+      padding-top: 12px;
+      border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+    }
+
+    :host([stacked]) .stat {
+      flex: 1;
+    }
+
+    :host([stacked]) .stat.bms {
+      flex: 0 0 auto;
+      align-self: center;
     }
 
     .stat {
@@ -248,6 +317,7 @@ export class EnergyBatterySummary extends LitElement {
           class="soc-container ${this.socEntity ? 'clickable' : ''}"
           @click=${() => this._handleClick(this.socEntity)}
         >
+          <span class="soc-value ${isCritical ? "critical" : isLow ? "low" : ""}">${soc.toFixed(1)}%</span>
           <div class="soc-bar">
             <div class="${socFillClass}" style="width: ${soc}%"></div>
             <span class="soc-text">${soc.toFixed(1)}%</span>

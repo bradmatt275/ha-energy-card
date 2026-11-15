@@ -1,7 +1,7 @@
 // src/energy-flow-card.ts
 // Main Energy Flow Card class
 
-import { LitElement, html, css, PropertyValues, TemplateResult } from "lit";
+import { LitElement, html, css, nothing, PropertyValues, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from "custom-card-helpers";
 
@@ -11,6 +11,7 @@ import {
   CircuitData,
   ActionButtonConfig,
   ActionConfig,
+  CardLayout,
 } from "./types";
 
 import {
@@ -19,7 +20,11 @@ import {
   DEFAULT_ANIMATION_CONFIG,
   DEFAULT_DISPLAY_CONFIG,
   DEFAULT_CIRCUITS_CONFIG,
+  DEFAULT_LAYOUT,
+  LANDSCAPE_MIN_WIDTH,
 } from "./const";
+
+import { DisplayOverrides, parseScale, resolveOverrides } from "./utils/overrides";
 
 import {
   calculateFlows,
@@ -59,6 +64,48 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: EnergyFlowCardConfig;
   @state() private _state!: EnergyState;
+  @state() private _overrides: DisplayOverrides = {};
+  @state() private _width = 0;
+
+  private _resizeObserver?: ResizeObserver;
+
+  public connectedCallback(): void {
+    super.connectedCallback();
+    this._overrides = resolveOverrides();
+    if (typeof ResizeObserver !== "undefined") {
+      this._resizeObserver ??= new ResizeObserver((entries) => {
+        const width = Math.round(entries[0]?.contentRect.width ?? 0);
+        if (width !== this._width) this._width = width;
+      });
+      this._resizeObserver.observe(this);
+    }
+  }
+
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._resizeObserver?.disconnect();
+  }
+
+  /** Effective layout setting: URL/device override, then card config. */
+  private get _layout(): CardLayout {
+    return this._overrides.layout ?? this._config?.layout ?? DEFAULT_LAYOUT;
+  }
+
+  private get _reducedEffects(): boolean {
+    return this._overrides.reduced_effects ?? this._config?.reduced_effects ?? false;
+  }
+
+  private get _scale(): number {
+    return this._overrides.scale ?? parseScale(this._config?.scale) ?? 1;
+  }
+
+  private get _isLandscape(): boolean {
+    const layout = this._layout;
+    if (layout === "landscape") return true;
+    if (layout === "portrait") return false;
+    // auto: compare the width the content actually gets after zoom
+    return this._width > 0 && this._width / this._scale >= LANDSCAPE_MIN_WIDTH;
+  }
 
   // Editor configuration
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
@@ -106,17 +153,30 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
         ...config.display,
       },
       action_buttons: config.action_buttons,
+      layout: config.layout,
+      reduced_effects: config.reduced_effects,
+      scale: config.scale,
     };
   }
 
   public getCardSize(): number {
-    let size = 4; // Base for flow diagram
-    if (this._config?.daily_totals?.show) size += 1;
-    if (this._config?.circuits?.show) size += 2;
-    if (this._config?.battery?.show) size += 1;
-    if (this._config?.inverter?.show) size += 1;
-    if (this._config?.ups?.show || this._config?.ev_charger?.show) size += 1;
-    return size;
+    let main = 4; // Base for flow diagram
+    if (this._config?.daily_totals?.show) main += 1;
+    let side = 0;
+    if (this._config?.battery?.show) side += 1;
+    if (this._config?.inverter?.show) side += 1;
+    if (this._config?.ups?.show || this._config?.ev_charger?.show) side += 1;
+    const circuits = this._config?.circuits?.show ? 2 : 0;
+    // Landscape puts the side sections next to the main column
+    return (this._isLandscape ? Math.max(main, side) : main + side) + circuits;
+  }
+
+  protected firstUpdated(changedProps: PropertyValues): void {
+    super.firstUpdated(changedProps);
+    // Measure once up front so "auto" doesn't render portrait until the
+    // ResizeObserver's first callback arrives.
+    const width = Math.round(this.getBoundingClientRect().width);
+    if (width > 0 && width !== this._width) this._width = width;
   }
 
   protected updated(changedProps: PropertyValues): void {
@@ -380,6 +440,34 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
       }
     }
 
+    /* Landscape layout: main column (flow + totals) | side column (status) */
+    .card-content.landscape {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      align-items: start;
+      gap: 16px 24px;
+    }
+
+    .card-content.landscape.no-side {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .card-content.landscape .span-all {
+      grid-column: 1 / -1;
+    }
+
+    .card-content.landscape .col {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    /* Side column is narrower: stack UPS and EV */
+    .card-content.landscape .col-side .optional-section {
+      flex-direction: column;
+    }
+
     /* Action Buttons */
     .action-buttons-container {
       display: flex;
@@ -439,11 +527,18 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
       return html`<ha-card><div class="loading">Loading...</div></ha-card>`;
     }
 
-    const hasLeftButtons = this._config.action_buttons?.left?.filter(b => b.icon)?.length;
-    const hasRightButtons = this._config.action_buttons?.right?.filter(b => b.icon)?.length;
+    const landscape = this._isLandscape;
+    const scale = this._scale;
+
+    const cardClasses = [
+      landscape ? "layout-landscape" : "layout-portrait",
+      this._reducedEffects ? "reduced-effects" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
 
     return html`
-      <ha-card>
+      <ha-card class=${cardClasses} style=${scale !== 1 ? `zoom: ${scale}` : ""}>
         ${this._config.title
           ? html`
               <div class="card-header">
@@ -451,160 +546,204 @@ export class EnergyFlowCard extends LitElement implements LovelaceCard {
               </div>
             `
           : ""}
-
-        <div class="card-content">
-          <!-- Action Buttons Container -->
-          ${hasLeftButtons || hasRightButtons
-            ? html`
-                <div class="action-buttons-container">
-                  <div class="action-buttons action-buttons-left">
-                    ${this._config.action_buttons?.left
-                      ?.filter(btn => btn.icon)
-                      ?.map((btn) => this._renderActionButton(btn))}
-                  </div>
-                  <div class="action-buttons action-buttons-right">
-                    ${this._config.action_buttons?.right
-                      ?.filter(btn => btn.icon)
-                      ?.map((btn) => this._renderActionButton(btn))}
-                  </div>
-                </div>
-              `
-            : ""}
-
-          <!-- Energy Flow Diagram -->
-          <energy-flow-diagram
-            .solar=${this._state.solar}
-            .grid=${this._state.grid}
-            .battery=${this._state.battery}
-            .home=${this._state.home}
-            .flows=${this._state.flows}
-            .animation=${this._config.animation}
-            .showSolar=${this._config.solar?.show ?? false}
-            .showBattery=${this._config.battery?.show ?? false}
-            .solarEntity=${this._config.solar?.total_power || this._config.solar?.arrays?.[0]?.power || null}
-            .gridEntity=${this._config.grid?.power || null}
-            .batteryEntity=${this._config.battery?.power || this._config.battery?.soc || null}
-            .homeEntity=${this._config.home?.power || null}
-          ></energy-flow-diagram>
-
-          <!-- Daily Totals -->
-          ${this._config.daily_totals?.show
-            ? html`
-                <energy-daily-totals
-                  .production=${this._state.solar?.dailyProduction}
-                  .consumption=${this._state.home?.dailyConsumption}
-                  .gridImport=${this._state.grid?.dailyImport}
-                  .gridExport=${this._state.grid?.dailyExport}
-                  .batteryCharge=${this._getNumericState(this._config.battery?.daily_charge)}
-                  .batteryDischarge=${this._getNumericState(this._config.battery?.daily_discharge)}
-                  .selfSufficiency=${this._state.selfSufficiency}
-                  .showSelfSufficiency=${this._config.daily_totals.show_self_sufficiency ?? true}
-                  .compactLayout=${this._config.daily_totals.compact_layout ?? false}
-                  .productionEntity=${this._config.solar?.daily_production || null}
-                  .consumptionEntity=${this._config.home?.daily_consumption || null}
-                  .importEntity=${this._config.grid?.daily_import || null}
-                  .exportEntity=${this._config.grid?.daily_export || null}
-                  .chargeEntity=${this._config.battery?.daily_charge || null}
-                  .dischargeEntity=${this._config.battery?.daily_discharge || null}
-                ></energy-daily-totals>
-              `
-            : ""}
-
-          <!-- Battery Summary -->
-          ${this._config.battery?.show
-            ? html`
-                <energy-battery-summary
-                  .soc=${this._state.battery?.soc}
-                  .power=${this._state.battery?.power}
-                  .voltage=${this._state.battery?.voltage}
-                  .current=${this._state.battery?.current}
-                  .charging=${this._state.battery?.charging ?? false}
-                  .socEntity=${this._config.battery?.soc || null}
-                  .powerEntity=${this._config.battery?.power || null}
-                  .voltageEntity=${this._config.battery?.voltage || null}
-                  .currentEntity=${this._config.battery?.current || null}
-                  .bmsOnline=${this._state.battery?.bmsOnline ?? null}
-                  .bmsTotal=${this._state.battery?.bmsTotal ?? null}
-                  .bmsCombinedEntity=${this._config.battery?.bms?.bms_combined || null}
-                ></energy-battery-summary>
-              `
-            : ""}
-
-          <!-- Inverter Status -->
-          ${this._config.inverter?.show
-            ? html`
-                <energy-inverter-status
-                  .hass=${this.hass}
-                  .modeEntity=${this._config.inverter?.mode || null}
-                  .mode=${this._state.inverter?.mode}
-                  .temperature=${this._state.inverter?.temperature}
-                  .dcTemperature=${this._state.inverter?.dcTemperature}
-                  .outputPower=${this._state.inverter?.outputPower}
-                  .outputVoltage=${this._state.inverter?.outputVoltage}
-                  .outputCurrent=${this._state.inverter?.outputCurrent}
-                  .temperatureEntity=${this._config.inverter?.temperature || null}
-                  .dcTemperatureEntity=${this._config.inverter?.dc_temperature || null}
-                  .outputPowerEntity=${this._config.inverter?.output_power || null}
-                  .outputVoltageEntity=${this._config.inverter?.output_voltage || null}
-                  .outputCurrentEntity=${this._config.inverter?.output_current || null}
-                  .batterySoc=${this._state.inverter?.batterySoc}
-                  .batteryVoltage=${this._state.inverter?.batteryVoltage}
-                  .batteryCurrent=${this._state.inverter?.batteryCurrent}
-                  .batterySocEntity=${this._config.inverter?.battery_soc || null}
-                  .batteryVoltageEntity=${this._config.inverter?.battery_voltage || null}
-                  .batteryCurrentEntity=${this._config.inverter?.battery_current || null}
-                  .gridStatus=${this._state.inverter?.gridStatus}
-                  .gridStatusEntity=${this._config.inverter?.grid_status || null}
-                ></energy-inverter-status>
-              `
-            : ""}
-
-          <!-- Circuits -->
-          ${this._config.circuits?.show && this._state.circuits.length > 0
-            ? html`
-                <energy-circuit-grid
-                  .circuits=${this._state.circuits}
-                  .columns=${this._config.circuits.columns ?? 5}
-                  .highlightTop=${this._config.circuits.highlight_top ?? 0}
-                ></energy-circuit-grid>
-              `
-            : ""}
-
-          <!-- Optional: UPS and EV Charger -->
-          ${this._config.ups?.show || this._config.ev_charger?.show
-            ? html`
-                <div class="optional-section">
-                  ${this._config.ups?.show
-                    ? html`
-                        <energy-ups-status
-                          .battery=${this._state.ups?.battery}
-                          .status=${this._state.ups?.status}
-                          .load=${this._state.ups?.load}
-                          .batteryEntity=${this._config.ups?.battery || null}
-                          .statusEntity=${this._config.ups?.status || null}
-                          .loadEntity=${this._config.ups?.load || null}
-                        ></energy-ups-status>
-                      `
-                    : ""}
-                  ${this._config.ev_charger?.show
-                    ? html`
-                        <energy-ev-status
-                          .hass=${this.hass}
-                          .modeEntity=${this._config.ev_charger?.mode || null}
-                          .mode=${this._state.evCharger?.mode}
-                          .status=${this._state.evCharger?.status}
-                          .plugStatus=${this._state.evCharger?.plugStatus}
-                          .power=${this._state.evCharger?.power}
-                        ></energy-ev-status>
-                      `
-                    : ""}
-                </div>
-              `
-            : ""}
-        </div>
+        ${landscape ? this._renderLandscape() : this._renderPortrait()}
       </ha-card>
     `;
   }
+
+  private _renderPortrait(): TemplateResult {
+    return html`
+      <div class="card-content">
+        ${this._renderActionButtons()}
+        ${this._renderFlowDiagram()}
+        ${this._renderDailyTotals()}
+        ${this._renderBatterySummary()}
+        ${this._renderInverterStatus()}
+        ${this._renderCircuits()}
+        ${this._renderOptionalSection()}
+      </div>
+    `;
+  }
+
+  /**
+   * Landscape: flow diagram + daily totals as the main (left) column, status
+   * sections in a side (right) column, circuits spanning the full width below.
+   */
+  private _renderLandscape(): TemplateResult {
+    const side = [
+      this._renderBatterySummary(),
+      this._renderInverterStatus(),
+      this._renderOptionalSection(),
+    ].filter((t) => t !== nothing);
+    const circuits = this._renderCircuits();
+
+    return html`
+      <div class="card-content landscape ${side.length === 0 ? "no-side" : ""}">
+        ${this._renderActionButtons()}
+        <div class="col col-main">
+          ${this._renderFlowDiagram()}
+          ${this._renderDailyTotals()}
+        </div>
+        ${side.length > 0 ? html`<div class="col col-side">${side}</div>` : nothing}
+        ${circuits !== nothing ? html`<div class="span-all">${circuits}</div>` : nothing}
+      </div>
+    `;
+  }
+
+  private _renderActionButtons(): TemplateResult | typeof nothing {
+    const left = this._config.action_buttons?.left?.filter((b) => b.icon) ?? [];
+    const right = this._config.action_buttons?.right?.filter((b) => b.icon) ?? [];
+    if (!left.length && !right.length) return nothing;
+
+    return html`
+      <div class="action-buttons-container span-all">
+        <div class="action-buttons action-buttons-left">
+          ${left.map((btn) => this._renderActionButton(btn))}
+        </div>
+        <div class="action-buttons action-buttons-right">
+          ${right.map((btn) => this._renderActionButton(btn))}
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderFlowDiagram(): TemplateResult {
+    return html`
+      <energy-flow-diagram
+        .solar=${this._state.solar}
+        .grid=${this._state.grid}
+        .battery=${this._state.battery}
+        .home=${this._state.home}
+        .flows=${this._state.flows}
+        .animation=${this._config.animation}
+        .reducedEffects=${this._reducedEffects}
+        .showSolar=${this._config.solar?.show ?? false}
+        .showBattery=${this._config.battery?.show ?? false}
+        .solarEntity=${this._config.solar?.total_power || this._config.solar?.arrays?.[0]?.power || null}
+        .gridEntity=${this._config.grid?.power || null}
+        .batteryEntity=${this._config.battery?.power || this._config.battery?.soc || null}
+        .homeEntity=${this._config.home?.power || null}
+      ></energy-flow-diagram>
+    `;
+  }
+
+  private _renderDailyTotals(): TemplateResult | typeof nothing {
+    if (!this._config.daily_totals?.show) return nothing;
+    return html`
+      <energy-daily-totals
+        .production=${this._state.solar?.dailyProduction}
+        .consumption=${this._state.home?.dailyConsumption}
+        .gridImport=${this._state.grid?.dailyImport}
+        .gridExport=${this._state.grid?.dailyExport}
+        .batteryCharge=${this._getNumericState(this._config.battery?.daily_charge)}
+        .batteryDischarge=${this._getNumericState(this._config.battery?.daily_discharge)}
+        .selfSufficiency=${this._state.selfSufficiency}
+        .showSelfSufficiency=${this._config.daily_totals.show_self_sufficiency ?? true}
+        .compactLayout=${this._config.daily_totals.compact_layout ?? false}
+        .productionEntity=${this._config.solar?.daily_production || null}
+        .consumptionEntity=${this._config.home?.daily_consumption || null}
+        .importEntity=${this._config.grid?.daily_import || null}
+        .exportEntity=${this._config.grid?.daily_export || null}
+        .chargeEntity=${this._config.battery?.daily_charge || null}
+        .dischargeEntity=${this._config.battery?.daily_discharge || null}
+      ></energy-daily-totals>
+    `;
+  }
+
+  private _renderBatterySummary(): TemplateResult | typeof nothing {
+    if (!this._config.battery?.show) return nothing;
+    return html`
+      <energy-battery-summary
+        .soc=${this._state.battery?.soc}
+        .power=${this._state.battery?.power}
+        .voltage=${this._state.battery?.voltage}
+        .current=${this._state.battery?.current}
+        .charging=${this._state.battery?.charging ?? false}
+        .socEntity=${this._config.battery?.soc || null}
+        .powerEntity=${this._config.battery?.power || null}
+        .voltageEntity=${this._config.battery?.voltage || null}
+        .currentEntity=${this._config.battery?.current || null}
+        .bmsOnline=${this._state.battery?.bmsOnline ?? null}
+        .bmsTotal=${this._state.battery?.bmsTotal ?? null}
+        .bmsCombinedEntity=${this._config.battery?.bms?.bms_combined || null}
+        .stacked=${this._isLandscape}
+      ></energy-battery-summary>
+    `;
+  }
+
+  private _renderInverterStatus(): TemplateResult | typeof nothing {
+    if (!this._config.inverter?.show) return nothing;
+    return html`
+      <energy-inverter-status
+        .hass=${this.hass}
+        .modeEntity=${this._config.inverter?.mode || null}
+        .mode=${this._state.inverter?.mode}
+        .temperature=${this._state.inverter?.temperature}
+        .dcTemperature=${this._state.inverter?.dcTemperature}
+        .outputPower=${this._state.inverter?.outputPower}
+        .outputVoltage=${this._state.inverter?.outputVoltage}
+        .outputCurrent=${this._state.inverter?.outputCurrent}
+        .temperatureEntity=${this._config.inverter?.temperature || null}
+        .dcTemperatureEntity=${this._config.inverter?.dc_temperature || null}
+        .outputPowerEntity=${this._config.inverter?.output_power || null}
+        .outputVoltageEntity=${this._config.inverter?.output_voltage || null}
+        .outputCurrentEntity=${this._config.inverter?.output_current || null}
+        .batterySoc=${this._state.inverter?.batterySoc}
+        .batteryVoltage=${this._state.inverter?.batteryVoltage}
+        .batteryCurrent=${this._state.inverter?.batteryCurrent}
+        .batterySocEntity=${this._config.inverter?.battery_soc || null}
+        .batteryVoltageEntity=${this._config.inverter?.battery_voltage || null}
+        .batteryCurrentEntity=${this._config.inverter?.battery_current || null}
+        .gridStatus=${this._state.inverter?.gridStatus}
+        .gridStatusEntity=${this._config.inverter?.grid_status || null}
+      ></energy-inverter-status>
+    `;
+  }
+
+  private _renderCircuits(): TemplateResult | typeof nothing {
+    if (!this._config.circuits?.show || this._state.circuits.length === 0) return nothing;
+    return html`
+      <energy-circuit-grid
+        .circuits=${this._state.circuits}
+        .columns=${this._config.circuits.columns ?? 5}
+        .highlightTop=${this._config.circuits.highlight_top ?? 0}
+      ></energy-circuit-grid>
+    `;
+  }
+
+  /** UPS and EV charger, side by side. */
+  private _renderOptionalSection(): TemplateResult | typeof nothing {
+    if (!this._config.ups?.show && !this._config.ev_charger?.show) return nothing;
+    return html`
+      <div class="optional-section">
+        ${this._config.ups?.show
+          ? html`
+              <energy-ups-status
+                .battery=${this._state.ups?.battery}
+                .status=${this._state.ups?.status}
+                .load=${this._state.ups?.load}
+                .batteryEntity=${this._config.ups?.battery || null}
+                .statusEntity=${this._config.ups?.status || null}
+                .loadEntity=${this._config.ups?.load || null}
+              ></energy-ups-status>
+            `
+          : nothing}
+        ${this._config.ev_charger?.show
+          ? html`
+              <energy-ev-status
+                .hass=${this.hass}
+                .modeEntity=${this._config.ev_charger?.mode || null}
+                .mode=${this._state.evCharger?.mode}
+                .status=${this._state.evCharger?.status}
+                .plugStatus=${this._state.evCharger?.plugStatus}
+                .power=${this._state.evCharger?.power}
+              ></energy-ev-status>
+            `
+          : nothing}
+      </div>
+    `;
+  }
+
   private _renderActionButton(button: ActionButtonConfig): TemplateResult {
     return html`
       <button

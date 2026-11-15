@@ -184,6 +184,16 @@ ev_charger:
 |--------|------|---------|-------------|
 | `title` | string | "Energy Flow" | Card title displayed in header |
 
+### Layout
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `layout` | string | `"auto"` | `auto`, `portrait` or `landscape`. `auto` switches to landscape when the card is at least 1000px wide |
+| `reduced_effects` | boolean | `false` | Disable blur, glow and pulse effects for low-power devices. Flow-line animation is kept |
+| `scale` | number | `1` | Zoom the whole card (0.5–3), e.g. `1.4` to fill a 1080p wall display |
+
+Each of these can also be overridden per device with URL parameters. See [Kiosk Mode](#kiosk-mode).
+
 ### Animation
 
 | Option | Type | Default | Description |
@@ -295,6 +305,11 @@ When configured with a `select` or `input_select` entity, the EV charger mode be
 
 The card automatically adapts to different screen sizes:
 
+### Landscape (`layout: auto` at ≥1000px card width, or `layout: landscape`)
+- Flow diagram and daily totals in a wide left column
+- Battery, inverter, UPS and EV charger stacked in a right column
+- Circuits span the full width underneath
+
 ### Desktop (>600px)
 - Full grid layout with configured number of circuit columns
 - UPS and EV charger displayed side-by-side
@@ -308,6 +323,35 @@ The card automatically adapts to different screen sizes:
 ### Narrow Screens (<400px)
 - Circuits grid reduces to single column
 - All content stacks vertically
+
+---
+
+## Kiosk Mode
+
+Use one dashboard on every device and give a wall display a different layout through its URL. The card reads these query parameters:
+
+| Parameter | Values | Overrides |
+|-----------|--------|-----------|
+| `efc_layout` | `auto`, `portrait`, `landscape` | `layout` |
+| `efc_effects` | `full`, `reduced` | `reduced_effects` |
+| `efc_scale` | number, e.g. `1.4` | `scale` |
+
+```
+http://homeassistant.local:8123/lovelace/energy?efc_layout=landscape&efc_effects=reduced&efc_scale=1.4
+```
+
+- **Precedence:** URL parameter → value remembered on this device → card config → default.
+- **Remembered per device:** values are saved in the browser's `localStorage`, so they survive Home Assistant dropping the query string when you switch views. Other devices are unaffected.
+- **Reset:** set any `efc_*` parameter to `reset` (e.g. `?efc_layout=reset`) to clear all remembered overrides on that device.
+- **Not shown in the visual editor:** overrides live in the browser, not the card config.
+
+### Kiosk setup tips
+
+- Put the card in a **Panel** view (or a full-width Sections view) so it fills the screen.
+- Launch the browser (Chromium `--kiosk`, or a kiosk app such as TouchKio via `--web-url`) with the URL above.
+- Use the `kiosk-mode` HACS plugin to hide the Home Assistant header and sidebar.
+- Use `efc_scale` to make the card fill the display and be readable from across the room.
+- On a Raspberry Pi 3 or 4, add `efc_effects=reduced`. Faster hardware can keep full effects.
 
 ---
 
@@ -388,7 +432,8 @@ src/
 │   └── ev-status.ts         # EV charger with mode selector
 └── utils/
     ├── power.ts             # Power formatting and more-info helper
-    └── flow.ts              # Flow calculations
+    ├── flow.ts              # Flow calculations
+    └── overrides.ts         # efc_* URL parameter / per-device overrides
 ```
 
 ---
